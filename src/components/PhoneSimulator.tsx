@@ -116,6 +116,66 @@ const GOODS_TYPES = [
 
 import { Product, StaffAccount, ActivityLog, ShopOwner } from "../types";
 
+// Lightweight multi-step tour-tip guide definition for registration fields
+const REG_TOUR_STEPS = [
+  {
+    target: "business-name",
+    title: "🏪 Step 1: Business Name",
+    desc: "Give your shop an identity. When you type here, Corner Streams configures your database ledger template dynamically.",
+    field: "regBusinessName",
+    autoFillVal: "Alaba Electronics Store",
+  },
+  {
+    target: "owner-name",
+    title: "👤 Step 2: Owner Full Name",
+    desc: "Enter your legal name. This aligns with official KYC records for Nigerian retail store audits.",
+    field: "regOwnerName",
+    autoFillVal: "Chinedu Eze",
+  },
+  {
+    target: "whatsapp-number",
+    title: "💬 Step 3: WhatsApp Number",
+    desc: "Crucial element. Corner Streams automatically forwards instant digital receipts and alerts to customers via WhatsApp!",
+    field: "regPhoneNumber",
+    autoFillVal: "+234 803 123 4567",
+  },
+  {
+    target: "nin",
+    title: "🇳🇬 Step 4: NIMC National ID (NIN)",
+    desc: "Direct verification lookup with the NIMC Identity Database is simulated here to verify your identity and eliminate retail fraud.",
+    field: "regNin",
+    autoFillVal: "12345678901",
+  },
+  {
+    target: "email",
+    title: "📧 Step 5: Principal Email",
+    desc: "Your master credentials. As the principal owner, you hold super-user root clearance across all staff terminal instances.",
+    field: "regEmail",
+    autoFillVal: "chinedu.eze@alaba.com",
+  },
+  {
+    target: "password",
+    title: "🔑 Step 6: Resilient Password",
+    desc: "Set up a highly secure master password to encrypt access to your owner dashboard and offline sales logs.",
+    field: "regPassword",
+    autoFillVal: "CornerStreams2026",
+  },
+  {
+    target: "goods-type",
+    title: "📦 Step 7: Preset Goods Template",
+    desc: "Pick your standard retail domain (e.g. Provisions, Electronics). Corner Streams pre-loads realistic inventory templates to jump-start your catalog!",
+    field: "regGoodsType",
+    autoFillVal: "electronics",
+  },
+  {
+    target: "submit-signup",
+    title: "🚀 Step 8: Verify & Run Simulation!",
+    desc: "All set! When you click submit, we will simulate dispatching a secure 6-digit OTP code to your WhatsApp to activate your terminal.",
+    field: "",
+    autoFillVal: "",
+  }
+];
+
 interface PhoneSimulatorProps {
   shopOwners?: ShopOwner[];
   setShopOwners?: React.Dispatch<React.SetStateAction<ShopOwner[]>>;
@@ -134,6 +194,9 @@ export default function PhoneSimulator({
   >("welcome");
   const [timeStr, setTimeStr] = useState("12:24");
 
+  // Lightweight walkthrough tour state
+  const [tourStep, setTourStep] = useState<number>(-1); // -1 = inactive, 0 to 7 = active step
+
   // Keep digital time updated representing system clock
   useEffect(() => {
     const updateTime = () => {
@@ -149,6 +212,13 @@ export default function PhoneSimulator({
     return () => clearInterval(interval);
   }, []);
 
+  // Reset tour state if navigating away from registration screen
+  useEffect(() => {
+    if (currentScreen !== "register") {
+      setTourStep(-1);
+    }
+  }, [currentScreen]);
+
   // Shared state values for Toast/Alert indicators
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error" | "info">("success");
@@ -159,6 +229,52 @@ export default function PhoneSimulator({
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  // Walkthrough Tour Action Handlers
+  const handleNextTourStep = () => {
+    if (tourStep >= 0 && tourStep < REG_TOUR_STEPS.length) {
+      const step = REG_TOUR_STEPS[tourStep];
+      // Auto-fill field if empty to keep the tour flowing seamlessly
+      if (step.field) {
+        if (step.field === "regBusinessName" && !regBusinessName) setRegBusinessName(step.autoFillVal);
+        if (step.field === "regOwnerName" && !regOwnerName) setRegOwnerName(step.autoFillVal);
+        if (step.field === "regPhoneNumber" && !regPhoneNumber) setRegPhoneNumber(step.autoFillVal);
+        if (step.field === "regNin" && !regNin) {
+          setRegNin(step.autoFillVal);
+          setNinLookupStatus("verified");
+          setNinVerifiedName("CHINEDU EZE");
+        }
+        if (step.field === "regEmail" && !regEmail) setRegEmail(step.autoFillVal);
+        if (step.field === "regPassword" && !regPassword) {
+          setRegPassword(step.autoFillVal);
+          setRegConfirmPassword(step.autoFillVal);
+        }
+        if (step.field === "regGoodsType" && !regGoodsType) setRegGoodsType(step.autoFillVal);
+      }
+    }
+    
+    if (tourStep < REG_TOUR_STEPS.length - 1) {
+      setTourStep(prev => prev + 1);
+    } else {
+      setTourStep(-1);
+      showToast("Walkthrough finished! Tap 'Verify WhatsApp Number' to complete sign-up.", "success");
+    }
+  };
+
+  const handleAutoFillAllTour = () => {
+    setRegBusinessName("Alaba Electronics Store");
+    setRegOwnerName("Chinedu Eze");
+    setRegPhoneNumber("+234 803 123 4567");
+    setRegNin("12345678901");
+    setNinLookupStatus("verified");
+    setNinVerifiedName("CHINEDU EZE");
+    setRegEmail("chinedu.eze@alaba.com");
+    setRegPassword("CornerStreams2026");
+    setRegConfirmPassword("CornerStreams2026");
+    setRegGoodsType("electronics");
+    setTourStep(7); // Jump straight to the submit step
+    showToast("⚡ All fields auto-filled with realistic tester credentials!", "success");
   };
 
   // ===================================================
@@ -1302,7 +1418,7 @@ export default function PhoneSimulator({
                 </div>
 
                 {/* Form fields */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 z-10">
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 z-10 pb-20">
                   <div className="text-left space-y-1">
                     <h3 className="font-display font-bold text-[#0A2540] text-base leading-tight">
                       Join Corner Streams
@@ -1311,6 +1427,37 @@ export default function PhoneSimulator({
                       Set up your shop metadata to begin tracking sales streams in real time.
                     </p>
                   </div>
+
+                  {/* Onboarding Walkthrough Banner */}
+                  {tourStep === -1 && (
+                    <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/45 to-emerald-50/70 border-l-4 border-[#0052CC] p-3 rounded-r-2xl space-y-2.5 mt-2 shadow-xs border border-slate-100 text-left">
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm shrink-0">🎓</span>
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] font-black text-[#0A2540] uppercase tracking-wider">Onboarding Walkthrough</p>
+                          <p className="text-[9px] text-slate-500 leading-normal font-semibold">
+                            First-time tester? Take a step-by-step interactive tour to learn how NIMC ID matching and presets operate!
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setTourStep(0)}
+                          className="bg-gradient-to-r from-[#0A2540] to-[#0052CC] text-white text-[9px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all shadow-xs uppercase tracking-wider"
+                        >
+                          🚀 Start Tour
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAutoFillAllTour}
+                          className="bg-[#4CBB17] hover:bg-[#4CBB17]/90 text-white text-[9px] font-black px-2.5 py-1.5 rounded-xl active:scale-95 transition-all shadow-xs uppercase tracking-wider"
+                        >
+                          ⚡ Auto-Fill All
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <form onSubmit={handleRegisterSubmit} className="space-y-3 pb-4">
                     {/* Business Name */}
@@ -1630,12 +1777,106 @@ export default function PhoneSimulator({
                     {/* Action */}
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-[#0A2540] via-[#0052CC] to-[#4CBB17] hover:brightness-110 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/10 active:scale-[0.98] text-white font-sans font-bold text-sm py-3 rounded-xl transition-all duration-155 mt-4 shadow-sm"
+                      className={`w-full bg-gradient-to-r from-[#0A2540] via-[#0052CC] to-[#4CBB17] hover:brightness-110 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/10 active:scale-[0.98] text-white font-sans font-bold text-sm py-3 rounded-xl transition-all duration-155 mt-4 shadow-sm ${
+                        tourStep === 7 ? "ring-4 ring-[#4CBB17] ring-offset-2 animate-pulse scale-[1.01]" : ""
+                      }`}
                     >
-                      Verify WhatsApp Number
+                      {tourStep === 7 ? "🚀 Complete Registration Walkthrough!" : "Verify WhatsApp Number"}
                     </button>
                   </form>
                 </div>
+
+                {/* Floating Walkthrough Tooltip Overlay */}
+                {tourStep >= 0 && (
+                  <div className="absolute bottom-3 left-3 right-3 bg-[#0A2540] text-white p-3.5 rounded-2xl shadow-2xl border border-white/10 z-[100] space-y-2.5 transform transition-all select-none animate-bounce-subtle text-left">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-0.5">
+                        <p className="text-[7.5px] font-black text-blue-400 uppercase tracking-widest leading-none">
+                          Interactive Walkthrough
+                        </p>
+                        <h4 className="text-[10.5px] font-extrabold leading-tight text-white flex items-center gap-1">
+                          {REG_TOUR_STEPS[tourStep].title}
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTourStep(-1);
+                          showToast("Walkthrough closed. Feel free to fill in manually!", "info");
+                        }}
+                        className="text-slate-400 hover:text-white p-0.5 rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <p className="text-[9.5px] text-slate-300 leading-normal font-medium text-left">
+                      {REG_TOUR_STEPS[tourStep].desc}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-white/10 gap-1.5">
+                      <div className="flex gap-1">
+                        {/* Auto-fill step button */}
+                        {REG_TOUR_STEPS[tourStep].field && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const step = REG_TOUR_STEPS[tourStep];
+                              if (step.field === "regBusinessName") setRegBusinessName(step.autoFillVal);
+                              if (step.field === "regOwnerName") setRegOwnerName(step.autoFillVal);
+                              if (step.field === "regPhoneNumber") setRegPhoneNumber(step.autoFillVal);
+                              if (step.field === "regNin") {
+                                setRegNin(step.autoFillVal);
+                                setNinLookupStatus("verified");
+                                setNinVerifiedName("CHINEDU EZE");
+                              }
+                              if (step.field === "regEmail") setRegEmail(step.autoFillVal);
+                              if (step.field === "regPassword") {
+                                setRegPassword(step.autoFillVal);
+                                setRegConfirmPassword(step.autoFillVal);
+                              }
+                              if (step.field === "regGoodsType") setRegGoodsType(step.autoFillVal);
+                              
+                              showToast(`✓ Filled: ${step.autoFillVal}`, "success");
+                            }}
+                            className="bg-blue-500/25 hover:bg-blue-500/40 text-blue-300 text-[8px] font-extrabold px-2 py-1 rounded-lg transition-colors border border-blue-400/20 shadow-xs"
+                          >
+                            ✨ Auto-fill
+                          </button>
+                        )}
+                        {tourStep < 7 && (
+                          <button
+                            type="button"
+                            onClick={handleAutoFillAllTour}
+                            className="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-400 text-[8px] font-extrabold px-1.5 py-1 rounded-lg transition-colors border border-emerald-400/20 shadow-xs"
+                          >
+                            ⚡ Auto-Fill All
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex gap-1 shrink-0">
+                        {tourStep > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setTourStep(prev => prev - 1)}
+                            className="bg-white/10 hover:bg-white/20 text-white text-[8px] font-extrabold px-2 py-1 rounded-lg active:scale-95 transition-all border border-white/5"
+                          >
+                            Prev
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleNextTourStep}
+                          className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[8.5px] font-black px-2.5 py-1 rounded-lg active:scale-95 transition-all shadow-xs flex items-center gap-1 uppercase tracking-wider"
+                        >
+                          <span>{tourStep === REG_TOUR_STEPS.length - 1 ? "Finish" : "Next"}</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
