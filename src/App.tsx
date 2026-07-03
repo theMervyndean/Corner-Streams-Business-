@@ -265,10 +265,23 @@ export default function App() {
 
   // Helper to copy simulation urls
   const handleCopyModePath = (path: string) => {
-    const fullUrl = window.location.origin + path;
+    let origin = window.location.origin;
+    let autoConverted = false;
+    
+    // Auto-convert private developer domain to public pre-production shared domain so friends/colleagues don't get "Web Not Found"!
+    if (origin.includes("-dev-")) {
+      origin = origin.replace("-dev-", "-pre-");
+      autoConverted = true;
+    }
+
+    const fullUrl = origin + path;
     navigator.clipboard.writeText(fullUrl)
       .then(() => {
-        alert(`Copied simulation link to clipboard:\n${fullUrl}\n\nOpen this in another tab, in incognito, or on your smartphone to test!`);
+        if (autoConverted) {
+          alert(`✨ Public Testing Link Copied!\n\nURL: ${fullUrl}\n\nNote: We automatically converted this to the PUBLIC Shared Preview link so your friends can open it on their phones (without needing an AI Studio developer login)!`);
+        } else {
+          alert(`Copied simulation link to clipboard:\n${fullUrl}\n\nOpen this in another tab, in incognito, or on your smartphone to test!`);
+        }
       })
       .catch(() => {
         alert(`Simulation Link:\n${fullUrl}`);
