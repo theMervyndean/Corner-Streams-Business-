@@ -1,0 +1,6 @@
+{
+  "name": "Corner Streams Business",
+  "description": "Interactive mobile mockup and complete Flutter (Dart) source code for Corner Streams Business onboarding, registration, and login experiences.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
