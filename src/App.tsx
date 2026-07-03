@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sparkles, Terminal, ShieldCheck, Smartphone, Cpu, ShieldCheckIcon, ShieldAlert, Globe } from "lucide-react";
+import { Sparkles, Terminal, ShieldCheck, Smartphone, Cpu, ShieldCheckIcon, ShieldAlert, Globe, Layers, Eye, X } from "lucide-react";
 import PhoneSimulator from "./components/PhoneSimulator";
 import FlutterCodeViewer from "./components/FlutterCodeViewer";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
@@ -237,8 +237,43 @@ export default function App() {
   const [shopOwners, setShopOwners] = useState<ShopOwner[]>(SEEDED_SHOPS);
   const [activeShopId, setActiveShopId] = useState<string | null>(null);
 
+  // Layout mode switcher state (Isolated production vs workspace)
+  const [layoutMode, setLayoutMode] = useState<"workspace" | "website_only" | "app_only">(() => {
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get("mode");
+    if (m === "website") return "website_only";
+    if (m === "app") return "app_only";
+    return "workspace"; // default workspace sandbox view
+  });
+  const [showConfigDesk, setShowConfigDesk] = useState(false);
+
   // Desktop active workspace view
   const [activeTab, setActiveTab] = useState<"website" | "simulator" | "admin_dashboard">("website");
+
+  // Custom callback from Landing Page to App simulator or admin tab
+  const handleNavigateFromLanding = (tab: "simulator" | "admin_dashboard") => {
+    if (layoutMode === "website_only") {
+      if (tab === "simulator") {
+        setLayoutMode("app_only");
+      } else {
+        alert("🔒 Admin Panel is locked in isolated Public Website mode. Use the Simulation Controls at the bottom corner to switch back to the Workspace Sandbox!");
+      }
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  // Helper to copy simulation urls
+  const handleCopyModePath = (path: string) => {
+    const fullUrl = window.location.origin + path;
+    navigator.clipboard.writeText(fullUrl)
+      .then(() => {
+        alert(`Copied simulation link to clipboard:\n${fullUrl}\n\nOpen this in another tab, in incognito, or on your smartphone to test!`);
+      })
+      .catch(() => {
+        alert(`Simulation Link:\n${fullUrl}`);
+      });
+  };
 
   // Force trigger direct owner simulation in simulator pane
   const handleSimulateOwnerLogin = (email: string) => {
@@ -253,6 +288,185 @@ export default function App() {
     }
   };
 
+  // Render layout mode-based simulation control panel
+  const renderFloatingConfigDesk = () => {
+    return (
+      <div className="fixed bottom-6 right-6 z-[9999] font-sans">
+        {/* Main Floating Trigger Button */}
+        {!showConfigDesk ? (
+          <button
+            onClick={() => setShowConfigDesk(true)}
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-950 text-white px-4 py-3 rounded-full shadow-2xl border border-slate-800 hover:scale-105 active:scale-95 transition-all"
+            title="Open Simulation Control Desk"
+          >
+            <Layers className="h-4 w-4 text-blue-400 animate-pulse" />
+            <span className="text-[11px] font-bold tracking-wider uppercase">Simulation Setup</span>
+          </button>
+        ) : (
+          <div className="bg-slate-900 border border-slate-850 rounded-2xl shadow-2xl p-5 w-80 text-left space-y-4 text-white">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-blue-400" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">Simulation Control Desk</h4>
+              </div>
+              <button
+                onClick={() => setShowConfigDesk(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Simulated Layout Mode</p>
+              
+              {/* Option 1: Full Dev Workspace */}
+              <button
+                onClick={() => {
+                  setLayoutMode("workspace");
+                  setShowConfigDesk(false);
+                }}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
+                  layoutMode === "workspace"
+                    ? "bg-blue-600/20 border-blue-500 text-blue-400 font-extrabold"
+                    : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800 font-medium"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm shrink-0">🛠️</span>
+                  <div className="truncate">
+                    <p className="text-[11px] leading-tight">Developer Sandbox Workspace</p>
+                    <p className="text-[8.5px] text-slate-500 font-normal leading-tight mt-0.5">Landing, Simulator + Flutter Code</p>
+                  </div>
+                </div>
+                {layoutMode === "workspace" && <span className="text-[8.5px] text-blue-400 font-black shrink-0 bg-blue-400/10 px-1.5 py-0.5 rounded ml-2">ACTIVE</span>}
+              </button>
+
+              {/* Option 2: Website Only */}
+              <button
+                onClick={() => {
+                  setLayoutMode("website_only");
+                  setShowConfigDesk(false);
+                }}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
+                  layoutMode === "website_only"
+                    ? "bg-emerald-600/20 border-emerald-500 text-emerald-400 font-extrabold"
+                    : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800 font-medium"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm shrink-0">🌐</span>
+                  <div className="truncate">
+                    <p className="text-[11px] leading-tight">Public Website (CornerStreams.com)</p>
+                    <p className="text-[8.5px] text-slate-500 font-normal leading-tight mt-0.5">Isolated static landing page only</p>
+                  </div>
+                </div>
+                {layoutMode === "website_only" && <span className="text-[8.5px] text-emerald-400 font-black shrink-0 bg-emerald-400/10 px-1.5 py-0.5 rounded ml-2">ACTIVE</span>}
+              </button>
+
+              {/* Option 3: App Only */}
+              <button
+                onClick={() => {
+                  setLayoutMode("app_only");
+                  setShowConfigDesk(false);
+                }}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
+                  layoutMode === "app_only"
+                    ? "bg-purple-600/20 border-purple-500 text-purple-400 font-extrabold"
+                    : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800 font-medium"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm shrink-0">📱</span>
+                  <div className="truncate">
+                    <p className="text-[11px] leading-tight">Standalone Mobile App Terminal</p>
+                    <p className="text-[8.5px] text-slate-500 font-normal leading-tight mt-0.5">No headers, code views, or overrides</p>
+                  </div>
+                </div>
+                {layoutMode === "app_only" && <span className="text-[8.5px] text-purple-400 font-black shrink-0 bg-purple-400/10 px-1.5 py-0.5 rounded ml-2">ACTIVE</span>}
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+              <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-1">
+                <span>⚡</span> Multi-Device Testing URL Tips
+              </p>
+              <p className="text-[9px] text-slate-400 leading-normal">
+                To test standalone layouts on real mobile phones or separate browser tabs, append these modes to your address:
+              </p>
+              <div className="space-y-1 pt-1 text-[8.5px] font-mono text-slate-300 bg-slate-900 p-2 rounded border border-slate-800 leading-relaxed">
+                <div 
+                  className="truncate hover:text-white cursor-pointer flex justify-between items-center" 
+                  onClick={() => handleCopyModePath("/?mode=website")}
+                  title="Copy Link"
+                >
+                  <span>🌐 Website URL</span>
+                  <span className="text-blue-400 font-sans font-bold hover:underline">Copy 📋</span>
+                </div>
+                <div 
+                  className="truncate hover:text-white cursor-pointer flex justify-between items-center" 
+                  onClick={() => handleCopyModePath("/?mode=app")}
+                  title="Copy Link"
+                >
+                  <span>📱 App Terminal URL</span>
+                  <span className="text-purple-400 font-sans font-bold hover:underline">Copy 📋</span>
+                </div>
+                <div 
+                  className="truncate hover:text-white cursor-pointer flex justify-between items-center" 
+                  onClick={() => handleCopyModePath("/")}
+                  title="Copy Link"
+                >
+                  <span>🛠️ Dev Sandbox URL</span>
+                  <span className="text-slate-400 font-sans font-bold hover:underline">Copy 📋</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // RENDER SELECTION ACCORDING TO SIMULATED MODE
+  if (layoutMode === "website_only") {
+    return (
+      <div className="min-h-screen bg-white flex flex-col font-sans select-none text-slate-700">
+        <LandingPage onNavigateToTab={handleNavigateFromLanding} />
+        {renderFloatingConfigDesk()}
+      </div>
+    );
+  }
+
+  if (layoutMode === "app_only") {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center font-sans select-none text-slate-700 p-4 relative overflow-hidden">
+        {/* Futuristic glowing orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[#0052CC] opacity-10 blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-emerald-500 opacity-[0.05] blur-3xl pointer-events-none"></div>
+
+        <div className="w-full max-w-[320px] flex flex-col items-center relative z-10">
+          <div className="text-center mb-5 text-white">
+            <h2 className="text-[10px] font-black font-sans tracking-widest text-slate-400 uppercase flex items-center justify-center gap-1.5">
+              <Smartphone className="h-4 w-4 text-[#0052CC]" />
+              <span>Corner Streams App Terminal</span>
+            </h2>
+            <p className="text-[8.5px] text-slate-500 font-mono mt-0.5">Standalone Device Simulator Mode</p>
+          </div>
+
+          <PhoneSimulator
+            shopOwners={shopOwners}
+            setShopOwners={setShopOwners}
+            activeShopId={activeShopId}
+            setActiveShopId={setActiveShopId}
+          />
+        </div>
+
+        {renderFloatingConfigDesk()}
+      </div>
+    );
+  }
+
+  // DEFAULT WORKSPACE SANDBOX VIEW
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none text-slate-700">
       {/* Upper Navigation Header */}
@@ -328,7 +542,7 @@ export default function App() {
 
       {/* Main Content Workspace Layout */}
       {activeTab === "website" ? (
-        <LandingPage onNavigateToTab={setActiveTab} />
+        <LandingPage onNavigateToTab={handleNavigateFromLanding} />
       ) : activeTab === "simulator" ? (
         <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT COLUMN: INTERACTIVE PHONE PREVIEW SIMULATION */}
@@ -427,6 +641,8 @@ export default function App() {
           </a>
         </div>
       </footer>
+
+      {renderFloatingConfigDesk()}
     </div>
   );
 }
