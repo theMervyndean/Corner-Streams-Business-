@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { seedShopsToFirestore, saveShopToFirestore, deleteShopFromFirestore } from "./lib/firebaseService";
 import { Sparkles, Terminal, ShieldCheck, Smartphone, Cpu, ShieldCheckIcon, ShieldAlert, Globe, Layers, Eye, X } from "lucide-react";
 import PhoneSimulator from "./components/PhoneSimulator";
 import FlutterCodeViewer from "./components/FlutterCodeViewer";
@@ -13,6 +14,7 @@ const SEEDED_SHOPS: ShopOwner[] = [
     businessName: "Adewale Provisions & Mini-Mart",
     ownerName: "Adewale Ibrahim",
     email: "adewale@mart.ng",
+    username: "adewale",
     phoneNumber: "+234 803 111 2222",
     password: "password123",
     nin: "12345678901",
@@ -22,7 +24,6 @@ const SEEDED_SHOPS: ShopOwner[] = [
     selectedPlan: "yearly",
     cardNumber: "4242 4242 4242 1122",
     expiry: "12/28",
-    cvv: "321",
     activePlanType: "yearly",
     dateRegistered: "2026-06-12",
     status: "active",
@@ -106,6 +107,7 @@ const SEEDED_SHOPS: ShopOwner[] = [
     businessName: "Chinelo Cosmetics & Beauty Shop",
     ownerName: "Chinelo Okeke",
     email: "chinelo@beauty.ng",
+    username: "chinelo",
     phoneNumber: "+234 812 333 4444",
     password: "chinelo_beauty",
     nin: "98765432109",
@@ -115,7 +117,6 @@ const SEEDED_SHOPS: ShopOwner[] = [
     selectedPlan: "monthly",
     cardNumber: "4242 4242 4242 8844",
     expiry: "09/27",
-    cvv: "567",
     activePlanType: "monthly",
     dateRegistered: "2026-06-20",
     status: "active",
@@ -166,6 +167,7 @@ const SEEDED_SHOPS: ShopOwner[] = [
     businessName: "Danjuma Electronics Hub",
     ownerName: "Musa Danjuma",
     email: "musa@danjumatech.com",
+    username: "musa",
     phoneNumber: "+234 905 555 6666",
     password: "musa_gadgets",
     nin: "45678912304",
@@ -175,7 +177,6 @@ const SEEDED_SHOPS: ShopOwner[] = [
     selectedPlan: "monthly",
     cardNumber: "4242 4242 4242 9900",
     expiry: "11/28",
-    cvv: "111",
     activePlanType: "trial",
     dateRegistered: "2026-06-28",
     status: "suspended", // Demonstrates block status
@@ -202,6 +203,7 @@ const SEEDED_SHOPS: ShopOwner[] = [
     businessName: "Bello Provisions Store (Pending Setup)",
     ownerName: "Bello Aliko",
     email: "bello@provisions.ng",
+    username: "bello",
     phoneNumber: "+234 810 555 7777",
     password: "bello_provisions",
     nin: "",
@@ -211,7 +213,6 @@ const SEEDED_SHOPS: ShopOwner[] = [
     selectedPlan: "monthly",
     cardNumber: "",
     expiry: "",
-    cvv: "",
     activePlanType: "trial",
     dateRegistered: "2026-07-01",
     status: "active",
@@ -233,9 +234,55 @@ const SEEDED_SHOPS: ShopOwner[] = [
 ];
 
 export default function App() {
-  // Global Shared States (Durable In-Memory DB)
-  const [shopOwners, setShopOwners] = useState<ShopOwner[]>(SEEDED_SHOPS);
+  // Global Shared States (Durable In-Memory DB synced to Firebase Firestore)
+  const [shopOwners, setShopOwnersState] = useState<ShopOwner[]>([]);
   const [activeShopId, setActiveShopId] = useState<string | null>(null);
+  const [isLoadingShops, setIsLoadingShops] = useState(true);
+
+  // Load initial shops from Firestore, or seed if empty
+  useEffect(() => {
+    async function initDb() {
+      try {
+        setIsLoadingShops(true);
+        const data = await seedShopsToFirestore(SEEDED_SHOPS);
+        setShopOwnersState(data);
+      } catch (e) {
+        console.error("Failed to initialize database", e);
+        setShopOwnersState(SEEDED_SHOPS);
+      } finally {
+        setIsLoadingShops(false);
+      }
+    }
+    initDb();
+  }, []);
+
+  // Sync state changes to Firestore automatically (wrapper around setShopOwnersState)
+  const setShopOwners = useCallback((value: React.SetStateAction<ShopOwner[]>) => {
+    setShopOwnersState((prev) => {
+      const next = typeof value === "function" ? value(prev) : value;
+      
+      // Calculate delta to update Firestore in background
+      const prevIds = new Set(prev.map((s) => s.id));
+      const nextIds = new Set(next.map((s) => s.id));
+
+      // 1. Deleted shops
+      prev.forEach((p) => {
+        if (!nextIds.has(p.id)) {
+          deleteShopFromFirestore(p.id);
+        }
+      });
+
+      // 2. Added or updated shops
+      next.forEach((n) => {
+        const p = prev.find((x) => x.id === n.id);
+        if (!p || JSON.stringify(p) !== JSON.stringify(n)) {
+          saveShopToFirestore(n);
+        }
+      });
+
+      return next;
+    });
+  }, []);
 
   // Layout mode switcher state (Isolated production vs workspace)
   const [layoutMode, setLayoutMode] = useState<"workspace" | "website_only" | "app_only">(() => {
@@ -441,6 +488,27 @@ export default function App() {
   };
 
   // RENDER SELECTION ACCORDING TO SIMULATED MODE
+  if (isLoadingShops) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center font-sans text-white p-6">
+        <div className="relative flex flex-col items-center max-w-sm text-center space-y-6">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-[#0052CC] animate-spin"></div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="font-display font-bold text-lg tracking-tight">Initializing Secure Nodes</h3>
+            <p className="text-xs text-slate-400 font-mono">Connecting to Firebase Cloud Services...</p>
+          </div>
+          
+          <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-[#0052CC] to-[#00875A] w-3/4 animate-pulse rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (layoutMode === "website_only") {
     return (
       <div className="min-h-screen bg-white flex flex-col font-sans select-none text-slate-700">

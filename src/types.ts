@@ -93,7 +93,7 @@ export interface ShopOwner {
   selectedPlan: "monthly" | "quarterly" | "yearly";
   cardNumber: string;
   expiry: string;
-  cvv: string;
+  cvv?: string;
   activePlanType: "trial" | "monthly" | "quarterly" | "yearly";
   dateRegistered: string;
   status: "active" | "suspended";
@@ -110,4 +110,11 @@ export interface ShopOwner {
   subscriptionPauseSchedule?: "none" | "end_of_period" | "immediate";
   subscriptionEndDate?: string;
   isRegisteredYetToUpdate?: boolean; // registered but yet to complete/update profile
+  username?: string;
+  motto?: string;
+  logoUrl?: string;
+  isRegisteredCAC?: boolean;
+  cacDocumentImage?: string;
+  personalIdType?: "voters_card" | "intl_passport" | "drivers_license" | "none";
+  personalIdImage?: string;
 }

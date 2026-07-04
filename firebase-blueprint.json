@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "ShopOwner": {
+      "title": "ShopOwner",
+      "description": "Represents a retail shop owner account, their metrics, products, and logs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessName": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "password": { "type": "string" },
+        "nin": { "type": "string" },
+        "ninVerifiedName": { "type": "string" },
+        "ninLookupStatus": { "type": "string" },
+        "goodsType": { "type": "string" },
+        "selectedPlan": { "type": "string" },
+        "cardNumber": { "type": "string" },
+        "expiry": { "type": "string" },
+        "cvv": { "type": "string" },
+        "activePlanType": { "type": "string" },
+        "dateRegistered": { "type": "string" },
+        "status": { "type": "string" },
+        "cumulativeRevenue": { "type": "number" },
+        "products": { "type": "array" },
+        "staff": { "type": "array" },
+        "activities": { "type": "array" },
+        "debtors": { "type": "array" },
+        "shifts": { "type": "array" },
+        "branches": { "type": "array" },
+        "offlineSalesQueue": { "type": "array" },
+        "salesReceipts": { "type": "array" },
+        "subscriptionPaused": { "type": "boolean" },
+        "subscriptionPauseSchedule": { "type": "string" },
+        "subscriptionEndDate": { "type": "string" },
+        "isRegisteredYetToUpdate": { "type": "boolean" },
+        "username": { "type": "string" },
+        "motto": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "isRegisteredCAC": { "type": "boolean" },
+        "cacDocumentImage": { "type": "string" },
+        "personalIdType": { "type": "string" },
+        "personalIdImage": { "type": "string" }
+      },
+      "required": ["id", "businessName", "ownerName", "email", "password"]
+    }
+  },
+  "firestore": {
+    "/shops/{shopId}": {
+      "schema": "ShopOwner",
+      "description": "Stores individual shop owners data, including their nested products, logs, and billing details."
+    }
+  }
+}

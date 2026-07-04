@@ -1,5 +1,5 @@
-import React from "react";
-import { motion } from "motion/react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowRight, 
   Smartphone, 
@@ -16,7 +16,13 @@ import {
   Database,
   QrCode,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Copy,
+  Eye,
+  Key,
+  Mail,
+  X,
+  ShieldCheck as ShieldCheckIcon
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -24,6 +30,16 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onNavigateToTab }: LandingPageProps) {
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showSandboxModal, setShowSandboxModal] = useState(false);
+  const [copiedText, setCopiedText] = useState("");
+
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(type);
+    setTimeout(() => setCopiedText(""), 2000);
+  };
+
   return (
     <div id="landing-page-root" className="flex-1 bg-white flex flex-col font-sans select-none text-slate-700">
       {/* Hero Header Banner */}
@@ -306,8 +322,8 @@ export default function LandingPage({ onNavigateToTab }: LandingPageProps) {
                   <p className="text-slate-500 text-[11px]">Best for growing businesses</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-slate-950 text-sm font-mono">₦12,550</p>
-                  <p className="text-[10px] text-[#0052CC] font-bold">Save 16% on auto-renewal</p>
+                  <p className="font-black text-slate-950 text-sm font-mono">₦24,000</p>
+                  <p className="text-[10px] text-[#0052CC] font-bold">Standard Quarterly billing</p>
                 </div>
               </div>
 
@@ -320,8 +336,8 @@ export default function LandingPage({ onNavigateToTab }: LandingPageProps) {
                   <p className="text-slate-500 text-[11px]">Best for multi-branch operators</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-slate-950 text-sm font-mono">₦42,000</p>
-                  <p className="text-[10px] text-emerald-600 font-bold">Save 30% on auto-renewal</p>
+                  <p className="font-black text-slate-950 text-sm font-mono">₦50,000</p>
+                  <p className="text-[10px] text-emerald-600 font-bold">Save on 12-month billing</p>
                 </div>
               </div>
             </div>
@@ -371,7 +387,236 @@ export default function LandingPage({ onNavigateToTab }: LandingPageProps) {
             </button>
           </div>
         </div>
+
+        {/* SECURE LOWER FOOTER REGION */}
+        <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+          <div>
+            <p>© 2026 Corner Streams Business. Built for Africa's retail innovators.</p>
+          </div>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className="hover:text-blue-400 transition-colors cursor-pointer font-medium underline underline-offset-4 font-sans"
+              id="privacy-policy-trigger"
+            >
+              Official Privacy Policy
+            </button>
+            <span className="text-slate-800">|</span>
+            <button
+              onClick={() => setShowSandboxModal(true)}
+              className="hover:text-emerald-400 transition-colors cursor-pointer font-medium underline underline-offset-4 font-sans"
+              id="sandbox-credentials-trigger"
+            >
+              Sandbox Credentials for Store Review
+            </button>
+          </div>
+        </div>
       </section>
+
+      {/* MODALS ANIME PRESENCE */}
+      <AnimatePresence>
+        {/* PRIVACY POLICY MODAL */}
+        {showPrivacyModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white text-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
+                    <ShieldCheckIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-base text-slate-900">App Store & Google Play Privacy Compliance</h3>
+                    <p className="text-[10px] text-slate-500 font-mono">Last updated: July 2026</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-600 leading-relaxed font-sans text-left">
+                <div>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-1">1. Scope of Privacy Agreement</h4>
+                  <p>
+                    This Privacy Policy explains how Corner Streams Business ("CSB", "we", "us", or "our") collects, protects, uses, and deletes data within our merchant monitoring ecosystems. We are committed to safeguarding the operational intelligence and personal identifiers of all registered micro, small, and medium businesses.
+                  </p>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl space-y-1">
+                  <h4 className="font-bold text-emerald-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    PCI-DSS Zero CVV Storage Mandate
+                  </h4>
+                  <p className="text-emerald-800 text-[11px]">
+                    To eliminate mobile store rejection risks and strictly comply with Payment Card Industry Data Security Standards (PCI-DSS), **Corner Streams Business does not store, process, or request Card Verification Value (CVV) codes**. All subscription cycles are configured via secure tokenized merchant authorization directly with secure endpoints.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-1">2. Types of Collected Information</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li><strong>Administrative Identifiers:</strong> Owner's real name, email address, password, verified username, phone number, and physical retail classification.</li>
+                    <li><strong>Staff Directory:</strong> cashiers and stock-keepers usernames and permissions set entirely at the owner's discretion.</li>
+                    <li><strong>Business Assets:</strong> inventory registers, cost and selling figures, cashier shifts, debtor sheets, and multi-branch structures.</li>
+                    <li><strong>Government NIN Lookups:</strong> For regulatory compliance, we verify the business registrant's identity using National Identification Numbers (NIN). Digits are processed transiently; we do not store raw NIN digits.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-1">3. Data Usage & Security Protocols</h4>
+                  <p>
+                    Collected data is utilized strictly to drive remote absentee store monitoring, prevent employee cash leakages, and organize cross-branch sales analytics. Data is stored on fully provisioned secure cloud servers with strict Firestore Security Rules that block unauthorized, unauthenticated write requests.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] mb-1">4. Unconditional Account Deletion</h4>
+                  <p>
+                    We guarantee absolute data ownership. At any point, a merchant may initiate a full account deletion inside the settings dashboard. Upon execution, all stored store metrics, employee registers, historical receipt audits, and owner profile metrics are permanently and irreversibly purged from our servers within 24 hours.
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-center">
+                  <p className="font-semibold text-slate-800">Do you have questions or want to request a hardcopy data log?</p>
+                  <p className="text-[10px] text-slate-500 font-mono">Reach out to our security officer at: <a href="mailto:privacy@cornerstreams.com" className="text-blue-600 hover:underline">privacy@cornerstreams.com</a></p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="bg-[#0A2540] hover:bg-slate-900 text-white font-bold px-5 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Acknowledge and Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* SANDBOX CREDENTIALS MODAL */}
+        {showSandboxModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white text-slate-800 rounded-2xl max-w-md w-full overflow-hidden flex flex-col shadow-2xl border border-slate-200"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
+                    <Key className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-base text-slate-900">Store Review Sandbox Center</h3>
+                    <p className="text-[10px] text-slate-500 font-mono">For Apple & Google Reviewers</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSandboxModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 text-xs text-slate-600 leading-relaxed font-sans text-left">
+                <p>
+                  Use these pre-configured credentials in the mobile app simulator to instantly bypass onboarding and inspect a live, fully-loaded business profile.
+                </p>
+
+                {/* Credentials block */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-200">
+                  <div className="p-3.5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Admin Username</p>
+                      <p className="text-sm font-mono font-bold text-slate-950">adewale</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy("adewale", "username")}
+                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="h-3 w-3" />
+                      <span>{copiedText === "username" ? "Copied!" : "Copy"}</span>
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 flex justify-between items-center">
+                    <div>
+                      <p className="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Admin Password</p>
+                      <p className="text-sm font-mono font-bold text-slate-950">password123</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy("password123", "password")}
+                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="h-3 w-3" />
+                      <span>{copiedText === "password" ? "Copied!" : "Copy"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Details list */}
+                <div className="space-y-2">
+                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">What is loaded in this Sandbox:</h4>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span><strong>Active Mart Name:</strong> Adewale Provisions & Mini-Mart</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span><strong>Mock Products:</strong> Pre-loaded stock cards with custom alert levels</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span><strong>Team logins:</strong> Active cashier accounts (e.g. <code>staff_chinelo</code>)</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span><strong>Forensics Log:</strong> Historical shift tallies, branches, and ledger lines</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-start gap-2 text-blue-800 text-[11px]">
+                  <span className="shrink-0">💡</span>
+                  <p>
+                    <strong>Tip:</strong> You can click the fast-track links on the landing page to directly boot into the phone workspace in one click.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowSandboxModal(false);
+                    onNavigateToTab("simulator");
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Open Simulator & Login
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

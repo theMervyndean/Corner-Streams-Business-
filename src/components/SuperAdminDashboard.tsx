@@ -9,6 +9,7 @@ import {
   Coins,
   Users,
   Database,
+  Download,
   Activity,
   AlertCircle,
   Unlock,
@@ -26,7 +27,8 @@ import {
   Mail,
   Zap,
   ShoppingBag,
-  ExternalLink
+  ExternalLink,
+  X
 } from "lucide-react";
 import { ShopOwner, Product, StaffAccount, ActivityLog } from "../types";
 
@@ -52,6 +54,7 @@ export default function SuperAdminDashboard({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPlan, setFilterPlan] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [selectedShopIds, setSelectedShopIds] = useState<string[]>([]);
 
   // State for creating a new custom shop directly from admin console
   const [showCreateShopModal, setShowCreateShopModal] = useState(false);
@@ -70,8 +73,88 @@ export default function SuperAdminDashboard({
   const [useWhatsApp, setUseWhatsApp] = useState(true);
   const [useInApp, setUseInApp] = useState(true);
 
+  // Pre-deduction alerts sent to Admin Dashboard
+  const [renewalPreAlerts, setRenewalPreAlerts] = useState<Array<{
+    id: string;
+    timestamp: string;
+    shopName: string;
+    ownerName: string;
+    plan: string;
+    amount: string;
+    dueDate: string;
+    status: "delivered" | "pending_deduction" | "deducted";
+  }>>([
+    {
+      id: "pre_alert_1",
+      timestamp: "02:14:15 AM",
+      shopName: "Musa Provisions & Mart",
+      ownerName: "Musa Danjuma",
+      plan: "yearly",
+      amount: "₦50,000",
+      dueDate: "2026-07-06",
+      status: "pending_deduction"
+    },
+    {
+      id: "pre_alert_2",
+      timestamp: "02:15:30 AM",
+      shopName: "Aliko Wholesale Depot",
+      ownerName: "Bello Aliko",
+      plan: "monthly",
+      amount: "₦5,000",
+      dueDate: "2026-07-08",
+      status: "pending_deduction"
+    },
+    {
+      id: "pre_alert_3",
+      timestamp: "02:16:45 AM",
+      shopName: "Chinelo Boutique",
+      ownerName: "Chinelo Okeke",
+      plan: "monthly",
+      amount: "₦5,000",
+      dueDate: "2026-07-09",
+      status: "pending_deduction"
+    }
+  ]);
+
   // Admin active shop detail states
   const selectedShop = shopOwners.find((s) => s.id === selectedShopId);
+
+  const handleDownloadReport = () => {
+    // Generate CSV for shop statistics (business name, owner name, email, phone, revenue, active status, and registration date)
+    const headers = [
+      "Business Name",
+      "Owner Name",
+      "Email Address",
+      "PhoneNumber",
+      "Cumulative Revenue (Naira)",
+      "Active Status",
+      "Registration Date",
+      "Active Plan Type",
+      "NIN Verification Status"
+    ];
+
+    const rows = shopOwners.map((shop) => [
+      `"${(shop.businessName || "").replace(/"/g, '""')}"`,
+      `"${(shop.ownerName || "").replace(/"/g, '""')}"`,
+      `"${(shop.email || "").replace(/"/g, '""')}"`,
+      `"${(shop.phoneNumber || "").replace(/"/g, '""')}"`,
+      shop.cumulativeRevenue || 0,
+      `"${shop.status || "active"}"`,
+      `"${shop.dateRegistered || ""}"`,
+      `"${shop.activePlanType || "trial"}"`,
+      `"${shop.ninLookupStatus || "unverified"}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `cornerstreams_merchants_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Stats aggregations
   const totalShops = shopOwners.length;
@@ -83,17 +166,105 @@ export default function SuperAdminDashboard({
 
   // Filtered Shop Owners list
   const filteredShops = shopOwners.filter((shop) => {
-    const matchesSearch =
-      shop.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.phoneNumber.includes(searchQuery);
+    const query = searchQuery.trim().toLowerCase();
+    
+    // Check if query is empty
+    const matchesSearch = !query ? true : (
+      (shop.businessName || "").toLowerCase().includes(query) ||
+      (shop.ownerName || "").toLowerCase().includes(query) ||
+      (shop.email || "").toLowerCase().includes(query) ||
+      (shop.username || "").toLowerCase().includes(query) ||
+      (shop.phoneNumber || "").toLowerCase().includes(query) ||
+      // Safe numeric check for phone numbers (e.g. searching 803 matched in +234 803 ...)
+      (() => {
+        const normalizedPhone = (shop.phoneNumber || "").replace(/\D/g, "");
+        const normalizedQuery = query.replace(/\D/g, "");
+        return normalizedQuery.length > 0 && normalizedPhone.includes(normalizedQuery);
+      })()
+    );
 
     const matchesPlan = filterPlan === "all" || shop.activePlanType === filterPlan;
     const matchesStatus = filterStatus === "all" || shop.status === filterStatus;
 
     return matchesSearch && matchesPlan && matchesStatus;
   });
+
+  // Bulk toggles and actions
+  const handleBulkToggleStatus = (status: "active" | "suspended") => {
+    setShopOwners((prev) =>
+      prev.map((s) => {
+        if (selectedShopIds.includes(s.id)) {
+          const alertDesc =
+            status === "suspended"
+              ? "Account suspended by Super Admin override (Bulk Action)."
+              : "Account reactivated by Super Admin override (Bulk Action).";
+          const newActivity: ActivityLog = {
+            id: `act_admin_bulk_${Date.now()}_${s.id}`,
+            timestamp: new Date().toLocaleTimeString(),
+            type: "Admin",
+            description: alertDesc
+          };
+
+          // Force disconnect from phone simulator if suspended
+          if (status === "suspended" && activeShopId === s.id) {
+            if (setActiveShopId) setActiveShopId(null);
+          }
+
+          return {
+            ...s,
+            status: status,
+            activities: [newActivity, ...s.activities]
+          };
+        }
+        return s;
+      })
+    );
+    setSelectedShopIds([]);
+  };
+
+  const handleBulkToggleNIN = (status: "verified" | "error") => {
+    setShopOwners((prev) =>
+      prev.map((s) => {
+        if (selectedShopIds.includes(s.id)) {
+          const newActivity: ActivityLog = {
+            id: `act_admin_nin_bulk_${Date.now()}_${s.id}`,
+            timestamp: new Date().toLocaleTimeString(),
+            type: "Admin",
+            description: `NIN security verification status set to ${status.toUpperCase()} by Super Admin (Bulk Action).`
+          };
+          return {
+            ...s,
+            ninLookupStatus: status,
+            activities: [newActivity, ...s.activities]
+          };
+        }
+        return s;
+      })
+    );
+    setSelectedShopIds([]);
+  };
+
+  const handleBulkChangePlan = (plan: "monthly" | "quarterly" | "yearly" | "trial") => {
+    setShopOwners((prev) =>
+      prev.map((s) => {
+        if (selectedShopIds.includes(s.id)) {
+          const newActivity: ActivityLog = {
+            id: `act_admin_sub_bulk_${Date.now()}_${s.id}`,
+            timestamp: new Date().toLocaleTimeString(),
+            type: "Admin",
+            description: `Subscription package changed to ${plan.toUpperCase()} by CSB Admin (Bulk Action).`
+          };
+          return {
+            ...s,
+            activePlanType: plan,
+            activities: [newActivity, ...s.activities]
+          };
+        }
+        return s;
+      })
+    );
+    setSelectedShopIds([]);
+  };
 
   // Toggle suspension state
   const handleToggleSuspension = (shopId: string) => {
@@ -438,6 +609,23 @@ export default function SuperAdminDashboard({
       // Process expiring plans
       endingSoon.forEach(shop => {
         const phone = shop.phoneNumber || "+234 905 555 6666";
+        const amount = shop.activePlanType === "yearly" ? "₦50,000" : shop.activePlanType === "quarterly" ? "₦24,000" : "₦5,000";
+
+        // Dispatch a pre-alert message to the Admin Dashboard
+        setRenewalPreAlerts(prev => [
+          {
+            id: `pre_alert_live_${Date.now()}_${shop.id}`,
+            timestamp: new Date().toLocaleTimeString(),
+            shopName: shop.businessName,
+            ownerName: shop.ownerName,
+            plan: shop.activePlanType,
+            amount: amount,
+            dueDate: shop.subscriptionEndDate || "2026-07-15",
+            status: "delivered"
+          },
+          ...prev
+        ]);
+
         if (useWhatsApp) {
           logs.push(`[WHATSAPP SUCCESS] Sent to ${phone} (Owner: ${shop.ownerName}): "Dear ${shop.ownerName}, your CornerStreams subscription for ${shop.businessName} is ending on ${shop.subscriptionEndDate}. Please ensure your pre-authorized card is funded for auto-renewal."`);
         }
@@ -491,7 +679,6 @@ export default function SuperAdminDashboard({
       selectedPlan: newPlan,
       cardNumber: "4242 4242 4242 " + Math.floor(1000 + Math.random() * 9000).toString(),
       expiry: "12/28",
-      cvv: "321",
       activePlanType: newPlan,
       dateRegistered: new Date().toISOString().split("T")[0],
       status: "active",
@@ -543,13 +730,24 @@ export default function SuperAdminDashboard({
           </p>
         </div>
 
-        <button
-          onClick={() => setShowCreateShopModal(true)}
-          className="bg-[#0052CC] hover:bg-[#0052CC]/90 text-white font-sans font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Provision New Shop</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0 shrink-0">
+          <button
+            onClick={handleDownloadReport}
+            className="bg-slate-800 hover:bg-slate-700 hover:text-white border border-slate-700 font-sans font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+            title="Download full merchant summary statistics as a CSV report"
+          >
+            <Download className="h-4 w-4 text-emerald-400" />
+            <span>Download Report</span>
+          </button>
+
+          <button
+            onClick={() => setShowCreateShopModal(true)}
+            className="bg-[#0052CC] hover:bg-[#0052CC]/90 text-white font-sans font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Provision New Shop</span>
+          </button>
+        </div>
       </div>
 
       {/* METRIC CARD GRID */}
@@ -616,8 +814,18 @@ export default function SuperAdminDashboard({
                   placeholder="Search by business, owner, email, phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white outline-none focus:border-[#0052CC] font-sans"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-10 py-2 text-xs text-white outline-none focus:border-[#0052CC] font-sans"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                    title="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -652,11 +860,117 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
+            {/* Bulk Selection Actions Banner */}
+            {selectedShopIds.length > 0 && (
+              <div className="bg-gradient-to-r from-[#0052CC]/25 via-indigo-600/10 to-slate-800 border border-[#0052CC]/50 rounded-xl p-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#0052CC] text-white font-mono font-black text-xs px-2.5 py-1 rounded-lg">
+                    {selectedShopIds.length} Selected
+                  </span>
+                  <p className="text-[11px] text-slate-300">
+                    Bulk actions will apply to all checked shop accounts simultaneously.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* Verify NIN Bulk */}
+                  <button
+                    type="button"
+                    onClick={() => handleBulkToggleNIN("verified")}
+                    className="bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 font-sans font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 active:scale-95"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Verify NIN</span>
+                  </button>
+
+                  {/* Unverify NIN Bulk */}
+                  <button
+                    type="button"
+                    onClick={() => handleBulkToggleNIN("error")}
+                    className="bg-slate-700/50 hover:bg-slate-700 hover:text-white border border-slate-600 text-slate-300 font-sans font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 active:scale-95"
+                  >
+                    <ShieldAlert className="h-3.5 w-3.5" />
+                    <span>Require NIN</span>
+                  </button>
+
+                  {/* Activate Bulk */}
+                  <button
+                    type="button"
+                    onClick={() => handleBulkToggleStatus("active")}
+                    className="bg-[#00875A]/25 hover:bg-[#00875A]/35 border border-[#00875A]/40 text-[#00875A] font-sans font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 active:scale-95"
+                  >
+                    <Unlock className="h-3 w-3" />
+                    <span>Activate</span>
+                  </button>
+
+                  {/* Suspend Bulk */}
+                  <button
+                    type="button"
+                    onClick={() => handleBulkToggleStatus("suspended")}
+                    className="bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-400 font-sans font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 active:scale-95"
+                  >
+                    <Lock className="h-3 w-3" />
+                    <span>Suspend</span>
+                  </button>
+
+                  {/* Change Plan Dropdown Bulk */}
+                  <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300">
+                    <span className="text-[9px] text-slate-500 font-sans uppercase">Plan:</span>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleBulkChangePlan(e.target.value as any);
+                          e.target.value = ""; // Reset dropdown
+                        }
+                      }}
+                      className="bg-transparent text-white border-none outline-none cursor-pointer focus:ring-0 font-sans p-0 m-0 text-[10px] font-bold"
+                    >
+                      <option value="">Set Plan...</option>
+                      <option value="trial">Trial Mode</option>
+                      <option value="monthly">Monthly Active</option>
+                      <option value="quarterly">Quarterly Active</option>
+                      <option value="yearly">Yearly Active</option>
+                    </select>
+                  </div>
+
+                  {/* Clear Selection */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedShopIds([])}
+                    className="text-slate-400 hover:text-white font-sans font-bold text-[10px] px-2 py-1"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Shop owners Master Table */}
             <div className="overflow-x-auto pr-1">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                    <th className="py-2.5 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-700 bg-slate-950 text-[#0052CC] focus:ring-0 cursor-pointer"
+                        checked={filteredShops.length > 0 && filteredShops.every(s => selectedShopIds.includes(s.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            // Select all filtered shops
+                            const allFilteredIds = filteredShops.map(s => s.id);
+                            setSelectedShopIds(prev => {
+                              const union = new Set([...prev, ...allFilteredIds]);
+                              return Array.from(union);
+                            });
+                          } else {
+                            // Deselect all filtered shops
+                            const filteredIdsSet = new Set(filteredShops.map(s => s.id));
+                            setSelectedShopIds(prev => prev.filter(id => !filteredIdsSet.has(id)));
+                          }
+                        }}
+                      />
+                    </th>
                     <th className="py-2.5 px-3">Business Name & Owner</th>
                     <th className="py-2.5 px-3">Plan Cycle</th>
                     <th className="py-2.5 px-3 text-right">Transactions</th>
@@ -675,6 +989,20 @@ export default function SuperAdminDashboard({
                           : "hover:bg-slate-800/30 text-slate-300"
                       }`}
                     >
+                      <td className="py-3 px-3 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-700 bg-slate-950 text-[#0052CC] focus:ring-0 cursor-pointer"
+                          checked={selectedShopIds.includes(shop.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedShopIds(prev => [...prev, shop.id]);
+                            } else {
+                              setSelectedShopIds(prev => prev.filter(id => id !== shop.id));
+                            }
+                          }}
+                        />
+                      </td>
                       <td className="py-3 px-3">
                         <div className="flex flex-col">
                           <span className="font-bold text-white flex items-center gap-1.5">
@@ -761,7 +1089,7 @@ export default function SuperAdminDashboard({
                   ))}
                   {filteredShops.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-6 text-center text-slate-500 font-sans italic">
+                      <td colSpan={6} className="py-6 text-center text-slate-500 font-sans italic">
                         No active shop owners matching search criteria.
                       </td>
                     </tr>
@@ -859,6 +1187,51 @@ export default function SuperAdminDashboard({
                 ))}
               </div>
             )}
+
+            {/* PRE-DEDUCTION ALERTS & BILLING MESSAGES LOG */}
+            <div className="bg-slate-800/10 border border-slate-800/60 rounded-2xl p-4 space-y-3 text-left">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-display font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="p-1 rounded bg-yellow-500/20 text-yellow-500">💳</span>
+                    <span>Admin Dashboard Billing Pre-Alerts</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                    Automated pre-deduction messages dispatched to merchants and logged in the system before subscription auto-renewal.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+                {renewalPreAlerts.map((alert) => (
+                  <div key={alert.id} className="bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5 flex items-start justify-between gap-2.5 text-[9.5px]">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{alert.shopName}</span>
+                        <span className="text-[8px] px-1.5 py-0.2 rounded font-mono font-medium tracking-normal bg-[#0052CC]/15 text-[#478eff] uppercase">
+                          {alert.plan}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 font-sans">
+                        Dear {alert.ownerName}, your pre-authorized card will be charged <strong>{alert.amount}</strong> for subscription renewal on <strong>{alert.dueDate}</strong>.
+                      </p>
+                      <div className="flex items-center gap-2 text-[8.5px] text-slate-500">
+                        <span>{alert.timestamp}</span>
+                        <span>•</span>
+                        <span className="text-emerald-400 flex items-center gap-0.5">
+                          ● Dispatch Confirmed
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[9px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-1.5 py-0.5 rounded font-black font-sans uppercase">
+                        PRE-ALERTS SENT
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1334,8 +1707,8 @@ export default function SuperAdminDashboard({
                     className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-white outline-none focus:border-[#0052CC]"
                   >
                     <option value="monthly">Monthly (₦5,000/mo)</option>
-                    <option value="quarterly">Quarterly (₦12,550/qtr)</option>
-                    <option value="yearly">Yearly (₦42,000/yr)</option>
+                    <option value="quarterly">Quarterly (₦24,000/qtr)</option>
+                    <option value="yearly">Yearly (₦50,000/yr)</option>
                   </select>
                 </div>
                 <div className="space-y-1">

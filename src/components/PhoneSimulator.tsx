@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Wifi,
+  WifiOff,
   Battery,
   Signal,
   ArrowLeft,
@@ -108,8 +109,9 @@ const RetailShopFrontBackground = () => (
 // Shop Category templates and realistic Nigerian suggestions
 const GOODS_TYPES = [
   { id: "provisions", name: "Provisions & Groceries", icon: "🛒", suggestions: ["Golden Penny Pasta", "Peak Milk Refill 400g", "Milo Chocolate Tin", "Indomie Onion Flavor", "Gala Super Sausage", "Sardine Queen Brand"] },
+  { id: "pharmacy", name: "Pharmacy & Chemists", icon: "💊", suggestions: ["Paracetamol 500mg (Emzor)", "Amoxicillin Capsules 500mg", "Cough Syrup (Tutolin)", "Vitamin C Chewable 100mg", "Artemether-Lumefantrine (ACT)", "Methylated Spirit 100ml"] },
   { id: "fashion", name: "Fashion & Clothing", icon: "👕", suggestions: ["Ankara Luxury Lace Fabric", "Senator Wear Custom White", "Designer Cotton T-Shirt", "Classic Blue Denim Jeans", "Casual Leather Loafers", "Smart Wrist Watch Silver"] },
-  { id: "cosmetics", name: "Cosmetics & Pharmacy", icon: "🧴", suggestions: ["Colgate MaxFresh", "Nivea Nourishing Cocoa Gel", "Dettol Liquid Antiseptic", "Vaseline Intensive Care", "Nyal Paracetamol Extra", "Hand Sanitizer Pocket Spray"] },
+  { id: "cosmetics", name: "Cosmetics & Beauty", icon: "🧴", suggestions: ["Colgate MaxFresh", "Nivea Nourishing Cocoa Gel", "Dettol Liquid Antiseptic", "Vaseline Intensive Care", "Hand Sanitizer Pocket Spray", "Fair & White Body Lotion"] },
   { id: "electronics", name: "Electronics & Gadgets", icon: "🔌", suggestions: ["Samsung Fast Charger Plug", "Sony Wireless Earbuds", "Oraimo Power Bank 20k", "Rechargeable LED Fan AC/DC", "Extension Plug Board 4Way", "Smart Bluetooth Speaker"] },
   { id: "beverages", name: "Wines & Beverages", icon: "🍷", suggestions: ["Eva Premium Bottled Water", "Chi Exotic Pineapple Fruit", "Coca-Cola Classic Can", "Power Horse Energy Drink", "St. Remy Brandy Wine", "Nescafe Instant Coffee 100g"] }
 ];
@@ -222,13 +224,18 @@ export default function PhoneSimulator({
   // Shared state values for Toast/Alert indicators
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error" | "info">("success");
+  const toastTimeoutRef = React.useRef<any>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToastMessage(message);
     setToastType(type);
-    setTimeout(() => {
+    toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+      toastTimeoutRef.current = null;
+    }, 4500);
   };
 
   // Walkthrough Tour Action Handlers
@@ -263,8 +270,13 @@ export default function PhoneSimulator({
   };
 
   const handleAutoFillAllTour = () => {
-    setRegBusinessName("Alaba Electronics Store");
+    setRegBusinessName("Alaba Health Pharmacy");
     setRegOwnerName("Chinedu Eze");
+    setRegUsername("chinedueze");
+    setRegMotto("Genuine Meds, Better Health");
+    setRegLogoUrl("💊");
+    setRegIsRegisteredCAC(true);
+    setRegCacDocumentImage("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='emerald'/><text x='10' y='50' fill='white'>CAC APPROVED</text></svg>");
     setRegPhoneNumber("+234 803 123 4567");
     setRegNin("12345678901");
     setNinLookupStatus("verified");
@@ -272,9 +284,10 @@ export default function PhoneSimulator({
     setRegEmail("chinedu.eze@alaba.com");
     setRegPassword("CornerStreams2026");
     setRegConfirmPassword("CornerStreams2026");
-    setRegGoodsType("electronics");
-    setTourStep(7); // Jump straight to the submit step
-    showToast("⚡ All fields auto-filled with realistic tester credentials!", "success");
+    setRegGoodsType("pharmacy");
+    setRegStep(3); // Advance to documents step so they can see full progress
+    setTourStep(-1); // Dismiss tour to let user browse
+    showToast("⚡ Auto-filled credentials & loaded Pharmacy template with CAC files!", "success");
   };
 
   // ===================================================
@@ -354,6 +367,9 @@ export default function PhoneSimulator({
 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [offlineSalesQueue, setOfflineSalesQueue] = useState<any[]>([]);
+  const [isSyncingOffline, setIsSyncingOffline] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // ===================================================
   // ABSENTEE OWNER & LEAKAGE PREVENTION STATES
@@ -549,12 +565,20 @@ export default function PhoneSimulator({
   // ===================================================
   const [regBusinessName, setRegBusinessName] = useState("");
   const [regOwnerName, setRegOwnerName] = useState("");
+  const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhoneNumber, setRegPhoneNumber] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regNin, setRegNin] = useState("");
+  const [regMotto, setRegMotto] = useState("");
+  const [regLogoUrl, setRegLogoUrl] = useState("");
+  const [regIsRegisteredCAC, setRegIsRegisteredCAC] = useState(false);
+  const [regCacDocumentImage, setRegCacDocumentImage] = useState("");
+  const [regPersonalIdType, setRegPersonalIdType] = useState<"voters_card" | "intl_passport" | "drivers_license" | "none">("voters_card");
+  const [regPersonalIdImage, setRegPersonalIdImage] = useState("");
   const [regGoodsType, setRegGoodsType] = useState("provisions");
+  const [regStep, setRegStep] = useState(1);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([
     "Golden Penny Pasta", "Peak Milk Refill 400g", "Milo Chocolate Tin", "Indomie Onion Flavor"
   ]);
@@ -565,7 +589,6 @@ export default function PhoneSimulator({
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "quarterly" | "yearly">("monthly");
   const [subCardNumber, setSubCardNumber] = useState("");
   const [subExpiry, setSubExpiry] = useState("");
-  const [subCvv, setSubCvv] = useState("");
   const [isActivatingSub, setIsActivatingSub] = useState(false);
   const [hasPaidSubscription, setHasPaidSubscription] = useState(false);
   const [subscriptionGraceDays, setSubscriptionGraceDays] = useState(7); // 1-week/7 days free trial
@@ -661,70 +684,107 @@ export default function PhoneSimulator({
   const [newStock, setNewStock] = useState("");
   const [newProdErrors, setNewProdErrors] = useState<{ [key: string]: string }>({});
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNextStep = () => {
     const errors: { [key: string]: string } = {};
 
-    if (!regBusinessName.trim()) {
-      errors.businessName = "Please enter business name";
-    } else if (regBusinessName.trim().length < 3) {
-      errors.businessName = "Should be at least 3 characters";
-    }
+    if (regStep === 1) {
+      // Validate Step 1: Credentials Setup
+      if (!regOwnerName.trim()) {
+        errors.ownerName = "Please enter legal owner name";
+      } else if (regOwnerName.trim().length < 3) {
+        errors.ownerName = "Owner name must be at least 3 characters";
+      }
 
-    if (!regOwnerName.trim()) {
-      errors.ownerName = "Please enter owner name";
-    }
+      if (!regUsername.trim()) {
+        errors.username = "Please enter username";
+      } else if (regUsername.trim().length < 3) {
+        errors.username = "Username must be at least 3 characters";
+      }
 
-    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    if (!regEmail.trim()) {
-      errors.email = "Please enter email address";
-    } else if (!emailRegex.test(regEmail.trim())) {
-      errors.email = "Please enter a valid email address";
-    }
+      if (!regPhoneNumber.trim()) {
+        errors.phoneNumber = "Please enter WhatsApp phone number";
+      } else if (regPhoneNumber.trim().length < 8) {
+        errors.phoneNumber = "Please enter a valid phone number (at least 8 digits)";
+      }
 
-    if (!regPhoneNumber.trim()) {
-      errors.phoneNumber = "Please enter WhatsApp phone number";
-    } else if (regPhoneNumber.trim().length < 8) {
-      errors.phoneNumber = "Please enter a valid phone number (at least 8 digits)";
-    }
+      if (!regPassword) {
+        errors.password = "Please enter password";
+      } else if (regPassword.length < 6) {
+        errors.password = "Password must be at least 6 characters";
+      }
 
-    if (!regPassword) {
-      errors.password = "Please enter password";
-    } else if (regPassword.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    }
+      if (!regConfirmPassword) {
+        errors.confirmPassword = "Please confirm password";
+      } else if (regPassword !== regConfirmPassword) {
+        errors.confirmPassword = "Passwords do not match";
+      }
 
-    if (!regConfirmPassword) {
-      errors.confirmPassword = "Please confirm password";
-    } else if (regPassword !== regConfirmPassword) {
-      errors.confirmPassword = "Passwords do not match";
-    }
+      if (!regNin.trim()) {
+        errors.nin = "Please enter 11-digit National Identity Number (NIN)";
+      } else if (!/^\d{11}$/.test(regNin.trim())) {
+        errors.nin = "NIN must be exactly 11 numeric digits (e.g. 12345678901)";
+      }
 
-    if (!regNin.trim()) {
-      errors.nin = "Please enter 11-digit NIN (National Identity Number)";
-    } else if (!/^\d{11}$/.test(regNin.trim())) {
-      errors.nin = "NIN must be exactly 11 numeric digits (e.g. 12345678901)";
-    }
+      setRegErrors(errors);
 
-    setRegErrors(errors);
+      if (Object.keys(errors).length === 0) {
+        // Generate secure mock 6-digit WhatsApp OTP verification code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        setWhatsappCode(code);
+        setEnteredCode(["", "", "", "", "", ""]);
+        setShowNotification(false);
 
-    if (Object.keys(errors).length === 0) {
-      // Generate secure mock 6-digit WhatsApp OTP validation code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setWhatsappCode(code);
-      setEnteredCode(["", "", "", "", "", ""]);
-      setShowNotification(false);
+        showToast("Sending WhatsApp 2-Step Verification code...", "success");
 
-      showToast("Sending WhatsApp confirmation code...", "success");
-
-      setTimeout(() => {
-        setCurrentScreen("whatsapp_verification");
         setTimeout(() => {
-          setShowNotification(true);
-        }, 1200);
-      }, 800);
-    } else {
-      showToast("Please correct the errors in the fields", "error");
+          setCurrentScreen("whatsapp_verification");
+          setTimeout(() => {
+            setShowNotification(true);
+          }, 1200);
+        }, 800);
+      } else {
+        showToast("Please correct the validation errors to proceed.", "error");
+      }
+
+    } else if (regStep === 2) {
+      // Validate Step 2: Shop Profile Build Up
+      if (!regBusinessName.trim()) {
+        errors.businessName = "Please enter business name";
+      } else if (regBusinessName.trim().length < 3) {
+        errors.businessName = "Business name should be at least 3 characters";
+      }
+
+      setRegErrors(errors);
+
+      if (Object.keys(errors).length === 0) {
+        setRegStep(3);
+        showToast("Credentials saved. Let's upload your business KYC documents.", "success");
+      } else {
+        showToast("Please enter business name to proceed.", "error");
+      }
+
+    } else if (regStep === 3) {
+      // Validate Step 3: KYC Documents
+      if (regIsRegisteredCAC) {
+        if (!regCacDocumentImage) {
+          errors.cacDocumentImage = "Please capture or upload your snapped CAC certificate image";
+        }
+      } else {
+        if (!regPersonalIdImage) {
+          errors.personalIdImage = `Please capture or upload your snapped ${regPersonalIdType.replace("_", " ")} identity card image`;
+        }
+      }
+
+      setRegErrors(errors);
+
+      if (Object.keys(errors).length === 0) {
+        showToast("KYC Verification details saved. Certification complete! 🎓", "success");
+        setTimeout(() => {
+          setCurrentScreen("subscription_gateway");
+        }, 800);
+      } else {
+        showToast("Please provide the required KYC document to complete registration.", "error");
+      }
     }
   };
 
@@ -740,9 +800,10 @@ export default function PhoneSimulator({
       setIsVerifying(false);
       if (codeString === whatsappCode) {
         setShowNotification(false);
-        showToast("WhatsApp verification successful!", "success");
+        showToast("WhatsApp verification successful! Now let's set up your Business Profile.", "success");
         setTimeout(() => {
-          setCurrentScreen("terms");
+          setRegStep(2); // Take them to step 2 (Business registration page and profile buildup)
+          setCurrentScreen("register");
         }, 800);
       } else {
         showToast("Invalid code. Check WhatsApp message and try again.", "error");
@@ -773,10 +834,6 @@ export default function PhoneSimulator({
     }
     if (!subExpiry || !/^\d\d\/\d\d$/.test(subExpiry)) {
       showToast("Please enter card expiry in MM/YY format", "error");
-      return;
-    }
-    if (!subCvv || !/^\d{3}$/.test(subCvv)) {
-      showToast("Please enter a valid 3-digit CVV number", "error");
       return;
     }
 
@@ -824,7 +881,14 @@ export default function PhoneSimulator({
             id: newOwnerId,
             businessName: regBusinessName.trim(),
             ownerName: regOwnerName.trim(),
-            email: regEmail.trim(),
+            username: regUsername.trim(),
+            motto: regMotto.trim() || "Quality Services First",
+            logoUrl: regLogoUrl || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=150&auto=format&fit=crop&q=60",
+            isRegisteredCAC: regIsRegisteredCAC,
+            cacDocumentImage: regCacDocumentImage,
+            personalIdType: regPersonalIdType,
+            personalIdImage: regPersonalIdImage,
+            email: regEmail.trim() || `${regUsername.trim()}@cornerstreams.com`,
             phoneNumber: regPhoneNumber.trim(),
             password: regPassword,
             nin: regNin,
@@ -834,7 +898,6 @@ export default function PhoneSimulator({
             selectedPlan: selectedPlan,
             cardNumber: subCardNumber,
             expiry: subExpiry,
-            cvv: subCvv,
             activePlanType: selectedPlan, // Activated plan
             dateRegistered: new Date().toISOString().split('T')[0],
             status: "active",
@@ -851,24 +914,31 @@ export default function PhoneSimulator({
         }
       }
 
-      showToast("1-Week Free Trial Activated! Autopay scheduled successfully.", "success");
-      setLogEmail(regEmail);
+      showToast(`🎉 Registration Successful! ${regBusinessName.trim()} is now active with a 1-Week Free Trial.`, "success");
+      setLogEmail(regUsername); // Prepopulate owner login input with username
       
       setTimeout(() => {
         // Clear form states as setup is done
         setRegBusinessName("");
         setRegOwnerName("");
+        setRegUsername("");
         setRegEmail("");
         setRegPhoneNumber("");
         setRegPassword("");
         setRegConfirmPassword("");
         setRegNin("");
+        setRegMotto("");
+        setRegLogoUrl("");
+        setRegIsRegisteredCAC(false);
+        setRegCacDocumentImage("");
+        setRegPersonalIdType("voters_card");
+        setRegPersonalIdImage("");
+        setRegStep(1);
         setWhatsappCode("");
         setEnteredCode(["", "", "", "", "", ""]);
         setAcceptedTerms(false);
         setSubCardNumber("");
         setSubExpiry("");
-        setSubCvv("");
         setCurrentScreen("login");
       }, 1500);
 
@@ -899,12 +969,7 @@ export default function PhoneSimulator({
       }
     } else {
       if (!logEmail.trim()) {
-        errors.email = "Please enter email address";
-      } else {
-        const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-        if (!emailRegex.test(logEmail.trim())) {
-          errors.email = "Please enter a valid email address";
-        }
+        errors.email = "Please enter your username or email";
       }
     }
 
@@ -929,7 +994,10 @@ export default function PhoneSimulator({
         }
       } else {
         // Business Owner / Admin login
-        const matchedOwner = shopOwners.find(o => o.email.toLowerCase() === usernameInput);
+        const matchedOwner = shopOwners.find(o => 
+          (o.username && o.username.toLowerCase() === usernameInput) || 
+          o.email.toLowerCase() === usernameInput
+        );
         if (matchedOwner) {
           if (matchedOwner.status === "suspended") {
             showToast("Access Denied: Account is suspended by CSB Super Admin.", "error");
@@ -952,7 +1020,6 @@ export default function PhoneSimulator({
             setSelectedPlan(matchedOwner.selectedPlan);
             setSubCardNumber(matchedOwner.cardNumber);
             setSubExpiry(matchedOwner.expiry);
-            setSubCvv(matchedOwner.cvv);
 
             setTimeout(() => {
               setCurrentScreen("dashboard");
@@ -1280,6 +1347,64 @@ export default function PhoneSimulator({
 
   return (
     <div className="relative w-[340px] h-[670px] bg-slate-900 rounded-[48px] p-4.5 shadow-2xl border-4 border-slate-700/80 flex flex-col justify-between overflow-hidden shrink-0 select-none">
+      <style>{`
+        /* Dark Mode overrides for Simulated Phone Display */
+        .dark-phone {
+          background-color: #0f172a !important; /* slate-900 */
+          color: #f1f5f9 !important; /* slate-100 */
+        }
+        .dark-phone .bg-white,
+        .dark-phone .bg-white\\/95,
+        .dark-phone .bg-white\\/90,
+        .dark-phone .bg-white\\/80,
+        .dark-phone .bg-slate-50,
+        .dark-phone .bg-slate-100,
+        .dark-phone .bg-slate-150,
+        .dark-phone .bg-\\[\\#FAFBFD\\],
+        .dark-phone .bg-\\[\\#FAFBFD\\]\\/70,
+        .dark-phone .bg-indigo-50,
+        .dark-phone .bg-emerald-50,
+        .dark-phone .bg-emerald-50\\/80,
+        .dark-phone .bg-blue-50,
+        .dark-phone .bg-slate-100\\/40,
+        .dark-phone .bg-\\[\\#0052CC\\]\\/5,
+        .dark-phone .bg-\\[\\#0052CC\\]\\/10 {
+          background-color: #1e293b !important; /* slate-800 */
+        }
+        .dark-phone .text-\\[\\#0A2540\\],
+        .dark-phone .text-slate-900,
+        .dark-phone .text-slate-800,
+        .dark-phone .text-slate-700 {
+          color: #f1f5f9 !important; /* slate-100 */
+        }
+        .dark-phone .text-slate-600,
+        .dark-phone .text-slate-500,
+        .dark-phone .text-slate-400 {
+          color: #94a3b8 !important; /* slate-400 */
+        }
+        .dark-phone .border-slate-100,
+        .dark-phone .border-slate-150,
+        .dark-phone .border-slate-200,
+        .dark-phone .border-slate-200\\/80,
+        .dark-phone .border-slate-200\\/50,
+        .dark-phone .border-slate-300 {
+          border-color: #334155 !important; /* slate-700 */
+        }
+        .dark-phone input,
+        .dark-phone select,
+        .dark-phone textarea {
+          background-color: #1e293b !important;
+          color: #f8fafc !important;
+          border-color: #475569 !important;
+        }
+        .dark-phone input::placeholder {
+          color: #64748b !important;
+        }
+        .dark-phone .divide-slate-100 > * + *,
+        .dark-phone .divide-slate-200 > * + * {
+          border-color: #334155 !important;
+        }
+      `}</style>
       {/* Phone Camera Notch Pillar */}
       <div className="absolute top-2.5 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-slate-950 rounded-full z-50 flex items-center justify-between px-3.5">
         <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
@@ -1288,17 +1413,31 @@ export default function PhoneSimulator({
       </div>
 
       {/* Simulated Phone Content Body Wrapper */}
-      <div className="relative flex-1 bg-white rounded-[32px] overflow-hidden flex flex-col pt-6 pb-2">
+      <div className={`relative flex-1 rounded-[32px] overflow-hidden flex flex-col pt-6 pb-2 transition-all duration-300 ${isDarkMode ? "bg-slate-950 text-slate-100 dark-phone" : "bg-white text-slate-800"}`}>
         
         {/* UPPER STATUS BAR (E.g. Clock, Signal, Wifi, Battery) */}
-        <div className="h-6 flex items-center justify-between px-5 text-slate-700 text-[10px] font-bold z-40 bg-white select-none">
+        <div className={`h-6 flex items-center justify-between px-5 text-[10px] font-bold z-40 select-none transition-all duration-300 ${isDarkMode ? "bg-slate-950 text-slate-300 border-b border-slate-900" : "bg-white text-slate-700"}`}>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-slate-500" />
             <span>{timeStr}</span>
+            {isOfflineMode ? (
+              <span className="ml-1 bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded-md text-[7.5px] tracking-wider animate-pulse border border-amber-200">
+                OFFLINE {offlineSalesQueue.length > 0 ? `(${offlineSalesQueue.length})` : ""}
+              </span>
+            ) : isSyncingOffline ? (
+              <span className="ml-1 bg-[#0052CC]/10 text-[#0052CC] font-black px-1.5 py-0.5 rounded-md text-[7.5px] tracking-wider animate-pulse border border-blue-200 flex items-center gap-0.5">
+                <RefreshCw className="h-2 w-2 animate-spin" />
+                <span>SYNCING...</span>
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-1.5">
-            <Signal className="w-3 h-3" />
-            <Wifi className="w-3 h-3" />
+            <Signal className={`w-3 h-3 ${isOfflineMode ? "text-slate-400" : "text-slate-700"}`} />
+            {isOfflineMode ? (
+              <WifiOff className="w-3 h-3 text-amber-600 animate-pulse" />
+            ) : (
+              <Wifi className={`w-3 h-3 ${isSyncingOffline ? "text-blue-500 animate-pulse" : "text-emerald-600"}`} />
+            )}
             <Battery className="w-4 h-4 text-slate-800" />
           </div>
         </div>
@@ -1390,493 +1529,786 @@ export default function PhoneSimulator({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.25 }}
-                className="absolute inset-0 flex flex-col z-10 bg-white"
+                className="absolute inset-0 flex flex-col z-10 bg-[#0F172A] text-white"
               >
                 {/* Store texture watermark background */}
-                <div className="absolute inset-0 z-0 opacity-[0.07] pointer-events-none">
+                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
                   <img
                     src={registerBg}
                     alt="Register Watermark background"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover grayscale invert"
                     referrerPolicy="no-referrer"
                   />
                 </div>
 
-                {/* Header Navigation */}
-                <div className="h-14 border-b border-slate-100 flex items-center justify-between px-4 text-[#0A2540] shrink-0 bg-white/90 backdrop-blur-sm z-20">
+                {/* Header Navigation with dark glass design */}
+                <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 shrink-0 bg-slate-900/95 backdrop-blur-sm z-20">
                   <button
-                    onClick={() => setCurrentScreen("welcome")}
-                    className="p-1 px-2 rounded-lg hover:bg-slate-100 text-[#0A2540] transition-colors duration-150 flex items-center gap-1 text-xs"
+                    onClick={() => {
+                      if (regStep > 1) {
+                        setRegStep(regStep - 1);
+                      } else {
+                        setCurrentScreen("welcome");
+                      }
+                    }}
+                    className="p-1 px-2.5 rounded-lg hover:bg-white/10 text-slate-300 transition-colors duration-150 flex items-center gap-1 text-xs"
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Back</span>
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <span>{regStep > 1 ? `Step ${regStep - 1}` : "Back"}</span>
                   </button>
-                  <span className="font-display font-bold text-[#0A2540] text-sm">
-                    Create Free Account
-                  </span>
-                  <div className="w-14"></div>
+                  <div className="flex flex-col items-center text-center">
+                    <span className="font-display font-black text-[11px] uppercase tracking-wider text-emerald-400">
+                      Corner Streams Business
+                    </span>
+                    <span className="text-[9px] font-semibold text-slate-400 font-mono">
+                      Step {regStep} of 3
+                    </span>
+                  </div>
+                  <div className="w-8"></div>
+                </div>
+
+                {/* Progress Indicators bar */}
+                <div className="px-6 pt-3 shrink-0">
+                  <div className="flex items-center justify-between gap-1.5">
+                    {[1, 2, 3].map((step) => {
+                      const isActive = regStep === step;
+                      const isCompleted = regStep > step;
+                      return (
+                        <div key={step} className="flex-1 space-y-1 text-left">
+                          <div className={`h-1.5 rounded-full transition-all duration-300 ${
+                            isActive 
+                              ? "bg-gradient-to-r from-blue-500 to-emerald-400" 
+                              : isCompleted 
+                                ? "bg-emerald-500" 
+                                : "bg-slate-800"
+                          }`} />
+                          <span className={`text-[8px] block font-mono ${isActive ? "text-emerald-400 font-bold" : isCompleted ? "text-slate-300" : "text-slate-500"}`}>
+                            {step === 1 ? "Credentials" : step === 2 ? "Shop Profile" : "KYC Documents"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Form fields */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 z-10 pb-20">
-                  <div className="text-left space-y-1">
-                    <h3 className="font-display font-bold text-[#0A2540] text-base leading-tight">
-                      Join Corner Streams
-                    </h3>
-                    <p className="text-slate-400 font-sans text-[11px] leading-relaxed">
-                      Set up your shop metadata to begin tracking sales streams in real time.
-                    </p>
-                  </div>
 
-                  {/* Onboarding Walkthrough Banner */}
-                  {tourStep === -1 && (
-                    <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/45 to-emerald-50/70 border-l-4 border-[#0052CC] p-3 rounded-r-2xl space-y-2.5 mt-2 shadow-xs border border-slate-100 text-left">
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm shrink-0">🎓</span>
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-black text-[#0A2540] uppercase tracking-wider">Onboarding Walkthrough</p>
-                          <p className="text-[9px] text-slate-500 leading-normal font-semibold">
-                            First-time tester? Take a step-by-step interactive tour to learn how NIMC ID matching and presets operate!
-                          </p>
-                        </div>
+                            {/* STEP 1: CREDENTIALS SETUP */}
+                  {regStep === 1 && (
+                    <div className="space-y-4 text-left animate-fade-in">
+                      <div className="space-y-1">
+                        <h3 className="font-display font-black text-sm text-white leading-tight flex items-center gap-1.5">
+                          <span>👤 Account Credentials</span>
+                          <span className="text-[9px] bg-slate-800 text-blue-400 px-1.5 py-0.5 rounded font-mono font-bold">Secure</span>
+                        </h3>
+                        <p className="text-slate-400 font-sans text-[10px] leading-relaxed">
+                          Set up your username and password. We will send a WhatsApp verification code to complete verification.
+                        </p>
                       </div>
-                      <div className="flex gap-1.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setTourStep(0)}
-                          className="bg-gradient-to-r from-[#0A2540] to-[#0052CC] text-white text-[9px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all shadow-xs uppercase tracking-wider"
-                        >
-                          🚀 Start Tour
-                        </button>
+
+                      {/* Onboarding walkthrough shortcut */}
+                      <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-2xl flex items-center justify-between">
+                        <div className="space-y-0.5 pr-2">
+                          <p className="text-[8.5px] text-slate-300 font-black uppercase tracking-wider">Demo Quick Onboard</p>
+                          <p className="text-[8px] text-slate-400 font-semibold leading-normal">Skip manual typing & pre-fill pharmacy with CAC logs!</p>
+                        </div>
                         <button
                           type="button"
                           onClick={handleAutoFillAllTour}
-                          className="bg-[#4CBB17] hover:bg-[#4CBB17]/90 text-white text-[9px] font-black px-2.5 py-1.5 rounded-xl active:scale-95 transition-all shadow-xs uppercase tracking-wider"
+                          className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 active:scale-95 transition-all text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shrink-0"
                         >
-                          ⚡ Auto-Fill All
+                          ⚡ Auto-Fill
+                        </button>
+                      </div>
+
+                      <div className="space-y-3.5 pt-1">
+                        {/* Legal Owner Name */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Legal Owner Name
+                          </label>
+                          <input
+                            type="text"
+                            value={regOwnerName}
+                            onChange={(e) => setRegOwnerName(e.target.value)}
+                            placeholder="e.g. Chinedu Eze"
+                            className={`w-full bg-slate-950 text-xs text-white border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 ${
+                              regErrors.ownerName ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                            }`}
+                          />
+                          {regErrors.ownerName && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.ownerName}</p>
+                          )}
+                        </div>
+
+                        {/* Username */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block flex items-center justify-between">
+                            <span>Username</span>
+                            <span className="text-[8px] text-slate-500 lowercase font-mono">no spaces</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={regUsername}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
+                              setRegUsername(val);
+                            }}
+                            placeholder="e.g. chinedueze1"
+                            className={`w-full bg-slate-950 text-xs text-white border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 font-mono tracking-wide ${
+                              regErrors.username ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                            }`}
+                          />
+                          {regErrors.username && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.username}</p>
+                          )}
+                        </div>
+
+                        {/* WhatsApp Number */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            WhatsApp Phone Number
+                          </label>
+                          <input
+                            type="tel"
+                            value={regPhoneNumber}
+                            onChange={(e) => setRegPhoneNumber(e.target.value)}
+                            placeholder="e.g. +234 803 123 4567"
+                            className={`w-full bg-slate-950 text-xs text-white border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 ${
+                              regErrors.phoneNumber ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                            }`}
+                          />
+                          {regErrors.phoneNumber && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.phoneNumber}</p>
+                          )}
+                        </div>
+
+                        {/* National Identity Number (NIN) */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block flex items-center justify-between">
+                            <span>🇳🇬 National Identity Number (NIN)</span>
+                            <span className="text-[8px] bg-slate-850 text-blue-400 font-bold px-1.5 py-0.5 rounded">NIMC Verification</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              maxLength={11}
+                              value={regNin}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                setRegNin(val);
+                              }}
+                              placeholder="e.g. 12345678901"
+                              className={`w-full bg-slate-950 text-xs text-white border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 font-mono tracking-wider pr-10 ${
+                                regErrors.nin ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                              }`}
+                            />
+                            {ninLookupStatus === "searching" && (
+                              <span className="absolute right-3.5 top-3 flex items-center">
+                                <span className="animate-spin h-3.5 w-3.5 border-2 border-blue-500 border-t-transparent rounded-full"></span>
+                              </span>
+                            )}
+                            {ninLookupStatus === "verified" && (
+                              <span className="absolute right-3.5 top-2.5 text-emerald-400 font-black text-sm" title="Verified Name Match">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          {ninLookupStatus === "searching" && (
+                            <p className="text-[8px] font-bold text-blue-400 animate-pulse flex items-center gap-1 mt-0.5">
+                              <span>🔍 Querying National Identity Database (NIMC)...</span>
+                            </p>
+                          )}
+                          {ninLookupStatus === "verified" && (
+                            <div className="bg-emerald-950/40 border border-emerald-500/20 p-2 rounded-xl flex items-center justify-between mt-1">
+                              <div>
+                                <p className="text-[8.5px] font-bold text-emerald-400 font-sans">✓ NIMC Match Certified</p>
+                                <p className="text-[8px] text-slate-400 mt-0.5">Linked Full Name: {ninVerifiedName}</p>
+                              </div>
+                              <span className="text-[7.5px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black tracking-wider uppercase scale-90 shrink-0">VERIFIED</span>
+                            </div>
+                          )}
+                          {regErrors.nin && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.nin}</p>
+                          )}
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showRegPassword ? "text" : "password"}
+                              value={regPassword}
+                              onChange={(e) => setRegPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className={`w-full bg-slate-950 text-xs text-white border outline-none pl-3.5 pr-10 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 ${
+                                regErrors.password ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowRegPassword(!showRegPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors duration-150"
+                            >
+                              {showRegPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                          {regErrors.password && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.password}</p>
+                          )}
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Confirm Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showRegConfirmPassword ? "text" : "password"}
+                              value={regConfirmPassword}
+                              onChange={(e) => setRegConfirmPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className={`w-full bg-slate-950 text-xs text-white border outline-none pl-3.5 pr-10 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 ${
+                                regErrors.confirmPassword ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors duration-150"
+                            >
+                              {showRegConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                          {regErrors.confirmPassword && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.confirmPassword}</p>
+                          )}
+                        </div>
+
+                        {/* Optional Email */}
+                        <div className="space-y-1 border-t border-white/5 pt-3">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Email Address <span className="text-slate-600 font-sans italic text-[8.5px] font-normal lowercase">(Optional)</span>
+                          </label>
+                          <input
+                            type="email"
+                            value={regEmail}
+                            onChange={(e) => setRegEmail(e.target.value)}
+                            placeholder="e.g. support@mystore.com"
+                            className="w-full bg-slate-950 text-xs text-white border border-slate-800 focus:border-blue-500 outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-150"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Proceed Trigger */}
+                      <button
+                        type="button"
+                        onClick={handleNextStep}
+                        className="w-full bg-gradient-to-r from-blue-600 via-[#0052CC] to-emerald-500 text-white font-sans font-black text-xs py-3 rounded-xl hover:brightness-110 active:scale-98 transition-all duration-150 shadow-md shadow-black/30 tracking-wider uppercase mt-4"
+                      >
+                        Verify WhatsApp Number
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 2: BUSINESS PROFILE BUILDUP */}
+                  {regStep === 2 && (
+                    <div className="space-y-4 text-left animate-fade-in">
+                      <div className="space-y-1">
+                        <h3 className="font-display font-black text-sm text-white leading-tight flex items-center gap-1.5">
+                          <span>🏪 Shop Profile Buildup</span>
+                          <span className="text-[9px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">Metadata</span>
+                        </h3>
+                        <p className="text-slate-400 font-sans text-[10px] leading-relaxed">
+                          Configure your business identity, branding assets, slogan, and load preset product inventory templates.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3.5">
+                        {/* Business Name */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Name of Business
+                          </label>
+                          <input
+                            type="text"
+                            value={regBusinessName}
+                            onChange={(e) => setRegBusinessName(e.target.value)}
+                            placeholder="e.g. Alaba Pharmacy & Chemist"
+                            className={`w-full bg-slate-950 text-xs text-white border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-155 ${
+                              regErrors.businessName ? "border-red-500 focus:border-red-500" : "border-slate-800 focus:border-blue-500"
+                            }`}
+                          />
+                          {regErrors.businessName && (
+                            <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.businessName}</p>
+                          )}
+                        </div>
+
+                        {/* Motto */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                            Business Motto or Slogan
+                          </label>
+                          <input
+                            type="text"
+                            value={regMotto}
+                            onChange={(e) => setRegMotto(e.target.value)}
+                            placeholder="e.g. Genuine Drugs, Healthy Communities"
+                            className="w-full bg-slate-950 text-xs text-white border border-slate-800 focus:border-blue-500 outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-600 transition-all duration-150"
+                          />
+                        </div>
+
+                        {/* Select Store Logo */}
+                        <div className="space-y-2 border border-white/5 bg-slate-900/40 p-3 rounded-2xl">
+                          <div>
+                            <label className="text-[9px] font-black text-slate-300 uppercase tracking-wider block">
+                              Select Shop Brand Icon
+                            </label>
+                            <p className="text-[8px] text-slate-500 font-sans mt-0.5">This symbol represents your brand on invoices and store headers.</p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1.5 justify-between">
+                            {[
+                              { emoji: "💊", label: "Pharmacy" },
+                              { emoji: "🛒", label: "Provisions" },
+                              { emoji: "👕", label: "Fashion" },
+                              { emoji: "🧴", label: "Beauty" },
+                              { emoji: "🔌", label: "Gadgets" },
+                              { emoji: "🍷", label: "Beverages" },
+                              { emoji: "🏪", label: "General" }
+                            ].map((logo) => {
+                              const isSelected = regLogoUrl === logo.emoji;
+                              return (
+                                <button
+                                  key={logo.emoji}
+                                  type="button"
+                                  onClick={() => {
+                                    setRegLogoUrl(logo.emoji);
+                                    showToast(`Selected branding symbol: ${logo.emoji}`, "info");
+                                  }}
+                                  className={`p-1.5 px-2.5 rounded-xl border text-xs flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 ${
+                                    isSelected 
+                                      ? "bg-emerald-500 text-slate-950 border-transparent font-bold" 
+                                      : "bg-slate-950 border-slate-850 text-slate-300 hover:bg-slate-900"
+                                  }`}
+                                >
+                                  <span className="text-base leading-none">{logo.emoji}</span>
+                                  <span className="text-[7px] uppercase tracking-wide leading-none">{logo.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Type of business category & preset suggestions */}
+                        <div className="space-y-3.5 border-t border-white/5 pt-3.5">
+                          <div className="space-y-0.5 text-left">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
+                              Type of Business (Preset categories)
+                            </label>
+                            <p className="text-[8.5px] text-slate-400 leading-tight">Pick a retail domain to auto-load realistic products.</p>
+                          </div>
+
+                          {/* Grid representations */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {GOODS_TYPES.map((gt) => (
+                              <button
+                                key={gt.id}
+                                type="button"
+                                onClick={() => {
+                                  setRegGoodsType(gt.id);
+                                  if (!regLogoUrl) {
+                                    setRegLogoUrl(gt.icon);
+                                  }
+                                  setSelectedSuggestions(gt.suggestions.slice(0, 4));
+                                  setOtherSuggestions([]);
+                                  showToast(`Switched catalog template to ${gt.name}!`, "info");
+                                }}
+                                className={`p-2 rounded-xl border text-[10px] font-semibold flex items-center gap-1.5 transition-all text-left active:scale-95 ${
+                                  regGoodsType === gt.id
+                                    ? "bg-gradient-to-br from-blue-600 via-[#0052CC] to-emerald-500 text-white border-transparent shadow-md shadow-emerald-900/10"
+                                    : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900"
+                                }`}
+                              >
+                                <span className="text-sm leading-none">{gt.icon}</span>
+                                <span className="truncate leading-none">{gt.name}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Checkboxes recommendations */}
+                          <div className="bg-slate-950/70 border border-slate-900 p-3 rounded-2xl space-y-2.5 text-left">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                              <span>📦 Preload inventory ({regGoodsType})</span>
+                              <span className="text-[8px] bg-blue-500/10 text-blue-400 font-bold px-1.5 py-0.5 rounded-full">
+                                {selectedSuggestions.length} active items
+                              </span>
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-1.5 max-h-[110px] overflow-y-auto pr-1">
+                              {GOODS_TYPES.find(gt => gt.id === regGoodsType)?.suggestions.map((sug) => {
+                                const isChecked = selectedSuggestions.includes(sug);
+                                return (
+                                  <label
+                                    key={sug}
+                                    className={`flex items-center gap-1.5 p-1.5 px-2 rounded-xl border select-none cursor-pointer text-[9px] transition-all bg-slate-900/50 hover:bg-slate-900 ${
+                                      isChecked ? "border-emerald-500/40 text-white font-black" : "border-slate-850 text-slate-500"
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setSelectedSuggestions(selectedSuggestions.filter(s => s !== sug));
+                                        } else {
+                                          setSelectedSuggestions([...selectedSuggestions, sug]);
+                                        }
+                                      }}
+                                      className="accent-emerald-400 h-3 w-3"
+                                    />
+                                    <span className="truncate leading-none">{sug}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+
+                            {/* Custom suggestions addition */}
+                            <div className="flex gap-1.5 border-t border-white/5 pt-2">
+                              <input
+                                type="text"
+                                value={otherSuggestionInput}
+                                onChange={(e) => setOtherSuggestionInput(e.target.value)}
+                                placeholder="Add custom item..."
+                                className="flex-1 bg-slate-900 border border-slate-800 outline-none text-[9px] px-2.5 py-1.5 rounded-xl text-white placeholder:text-slate-600 focus:border-blue-500"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    if (otherSuggestionInput.trim()) {
+                                      setOtherSuggestions([...otherSuggestions, otherSuggestionInput.trim()]);
+                                      setOtherSuggestionInput("");
+                                      showToast(`Added custom: ${otherSuggestionInput.trim()}`, "success");
+                                    }
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (otherSuggestionInput.trim()) {
+                                    setOtherSuggestions([...otherSuggestions, otherSuggestionInput.trim()]);
+                                    setOtherSuggestionInput("");
+                                    showToast(`Added custom: ${otherSuggestionInput.trim()}`, "success");
+                                  }
+                                }}
+                                className="px-2.5 bg-slate-800 text-slate-300 rounded-xl text-[9px] py-1.5 active:scale-95 transition-all"
+                              >
+                                Add
+                              </button>
+                            </div>
+
+                            {/* Tags list */}
+                            {otherSuggestions.length > 0 && (
+                              <div className="flex flex-wrap gap-1 max-h-[45px] overflow-y-auto">
+                                {otherSuggestions.map((item) => (
+                                  <span
+                                    key={item}
+                                    className="bg-slate-900 border border-emerald-500/20 text-emerald-400 text-[8px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <span>{item}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setOtherSuggestions(otherSuggestions.filter(x => x !== item))}
+                                      className="text-red-400 hover:text-red-300 font-extrabold text-[9px]"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Submit action */}
+                      <button
+                        type="button"
+                        onClick={handleNextStep}
+                        className="w-full bg-gradient-to-r from-blue-600 to-emerald-500 text-white font-sans font-black text-xs py-3 rounded-xl hover:brightness-110 active:scale-98 transition-all mt-4 tracking-wider uppercase"
+                      >
+                        Proceed to Documents
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 3: KYC VERIFICATION DOCUMENTS */}
+                  {regStep === 3 && (
+                    <div className="space-y-4 text-left animate-fade-in">
+                      <div className="space-y-1">
+                        <h3 className="font-display font-black text-sm text-white leading-tight flex items-center gap-1.5">
+                          <span>🛡️ Verification & KYC Documents</span>
+                          <span className="text-[9px] bg-slate-800 text-blue-400 px-1.5 py-0.5 rounded font-mono font-bold">Nigeria KYC</span>
+                        </h3>
+                        <p className="text-slate-400 font-sans text-[10px] leading-relaxed">
+                          Under Nigerian regulatory compliance, upload your official business registration certificate or a legal personal identity card.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* CAC Toggle selection */}
+                        <div className="space-y-2 border border-white/5 bg-slate-900/40 p-3 rounded-2xl">
+                          <div>
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-wider block">
+                              Is your business legally registered with CAC?
+                            </span>
+                            <span className="text-[8px] text-slate-500 block leading-tight mt-0.5">Corporate Affairs Commission (CAC) of the Federal Republic of Nigeria</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRegIsRegisteredCAC(true);
+                                showToast("Switched setup to Registered Business (CAC uploads)", "info");
+                              }}
+                              className={`p-2 rounded-xl border text-[9.5px] font-black flex flex-col items-center justify-center transition-all ${
+                                regIsRegisteredCAC 
+                                  ? "bg-gradient-to-b from-slate-900 to-slate-950 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/10" 
+                                  : "bg-slate-950 border-slate-850 text-slate-500 hover:text-slate-300"
+                              }`}
+                            >
+                              <span>🏢 REGISTERED</span>
+                              <span className="text-[7px] text-slate-500 font-medium font-sans lowercase italic mt-0.5">upload CAC certificate</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRegIsRegisteredCAC(false);
+                                showToast("Switched setup to Non-Registered (Personal ID card)", "info");
+                              }}
+                              className={`p-2 rounded-xl border text-[9.5px] font-black flex flex-col items-center justify-center transition-all ${
+                                !regIsRegisteredCAC 
+                                  ? "bg-gradient-to-b from-slate-900 to-slate-950 border-blue-500 text-blue-400 shadow-md shadow-blue-500/10" 
+                                  : "bg-slate-950 border-slate-850 text-slate-500 hover:text-slate-300"
+                              }`}
+                            >
+                              <span>👤 NON-REGISTERED</span>
+                              <span className="text-[7px] text-slate-500 font-medium font-sans lowercase italic mt-0.5">upload personal ID card</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Upload areas */}
+                        {regIsRegisteredCAC ? (
+                          /* REGISTERED: Snapped CAC Document */
+                          <div className="space-y-3.5 border border-white/5 bg-slate-900/20 p-3 rounded-2xl text-left animate-fade-in">
+                            <div className="space-y-0.5">
+                              <label className="text-[9.5px] font-black text-slate-300 uppercase tracking-wider block">
+                                Snapped CAC Document Photo
+                              </label>
+                              <p className="text-[8px] text-slate-550 leading-tight">Snap or upload your Certificate of Incorporation or Form 1.1 document.</p>
+                            </div>
+
+                            {/* Simulated Snapshot */}
+                            {regCacDocumentImage ? (
+                              <div className="relative border border-emerald-500/30 rounded-xl overflow-hidden bg-slate-950/80 p-3 flex flex-col items-center text-center">
+                                {/* CAC Mock Image representation */}
+                                <div className="border border-[#D4AF37] max-w-[170px] w-full bg-[#FCFBF4] text-slate-900 p-2 shadow-lg rounded-sm relative text-left select-none font-sans">
+                                  {/* CAC gold seal */}
+                                  <div className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-[#D4AF37]/90 flex items-center justify-center text-[5px] text-white font-bold font-sans select-none border border-amber-600">SEAL</div>
+                                  <h4 className="text-[5px] font-extrabold text-emerald-850 uppercase text-center tracking-tight leading-none mt-1">Corporate Affairs Commission</h4>
+                                  <p className="text-[3.5px] text-slate-500 text-center leading-none italic uppercase">Federal Republic of Nigeria</p>
+                                  <div className="border-t border-emerald-900/20 my-1"></div>
+                                  <p className="text-[4px] font-mono leading-none"><b>RC NO:</b> RC-{Math.floor(100000 + Math.random() * 899999)}</p>
+                                  <p className="text-[4.5px] font-black text-[#0A2540] truncate uppercase mt-0.5">{regBusinessName || "Alaba Health Pharmacy"}</p>
+                                  <p className="text-[3.5px] text-slate-600 mt-1 leading-normal">This is to certify that the business name herein is registered under Part B of the Companies and Allied Matters Act...</p>
+                                  <div className="flex justify-between items-end mt-2 pt-1 border-t border-slate-200">
+                                    <span className="text-[2.5px] text-slate-400 font-mono">DATED: {new Date().toLocaleDateString()}</span>
+                                    <span className="text-[3.5px] text-slate-700 italic font-serif">Registrar-General</span>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRegCacDocumentImage("");
+                                    showToast("Removed CAC document photo.", "info");
+                                  }}
+                                  className="absolute top-2 right-2 p-1 bg-slate-950/80 rounded-full hover:bg-red-950 text-slate-300 font-bold text-xs flex items-center justify-center w-5 h-5"
+                                >
+                                  ×
+                                </button>
+                                <span className="text-[8px] text-emerald-400 font-bold block mt-2.5">✓ CAC Document Snapped Successfully</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-xl p-5 bg-slate-950/40 text-center space-y-3">
+                                <span className="text-2xl text-slate-600">📷</span>
+                                <div className="space-y-0.5">
+                                  <p className="text-[10px] text-slate-400 font-bold">No snapped certificate yet</p>
+                                  <p className="text-[8px] text-slate-500">Provide an eye-safe phone camera snap</p>
+                                </div>
+                                <div className="flex gap-2 w-full max-w-[200px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast("📸 Snapped CAC Certificate of Incorporation photo successfully!", "success");
+                                      setRegCacDocumentImage("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='emerald'/><text x='10' y='50' fill='white'>CAC APPROVED</text></svg>");
+                                    }}
+                                    className="flex-1 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 text-slate-300 rounded-xl text-[9.5px] py-2 font-bold active:scale-95 transition-all"
+                                  >
+                                    📷 Snap
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast("✓ File uploaded from storage!", "success");
+                                      setRegCacDocumentImage("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='emerald'/><text x='10' y='50' fill='white'>CAC APPROVED</text></svg>");
+                                    }}
+                                    className="flex-1 bg-blue-600 text-white rounded-xl text-[9.5px] py-2 font-bold active:scale-95 transition-all"
+                                  >
+                                    📁 Upload
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {regErrors.cacDocumentImage && (
+                              <p className="text-[9px] font-semibold text-red-450 pt-0.5">{regErrors.cacDocumentImage}</p>
+                            )}
+                          </div>
+                        ) : (
+                          /* NON-REGISTERED: Identity Cards */
+                          <div className="space-y-3.5 border border-white/5 bg-slate-900/20 p-3 rounded-2xl text-left animate-fade-in">
+                            <div className="space-y-1.5">
+                              <label className="text-[9.5px] font-black text-slate-300 uppercase tracking-wider block">
+                                Select Identity Card & Snap Card
+                              </label>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {[
+                                  { type: "voters_card", label: "Voter Card" },
+                                  { type: "intl_passport", label: "Passport" },
+                                  { type: "drivers_license", label: "Drivers Lic." }
+                                ].map((idObj) => {
+                                  const isSelected = regPersonalIdType === idObj.type;
+                                  return (
+                                    <button
+                                      key={idObj.type}
+                                      type="button"
+                                      onClick={() => {
+                                        setRegPersonalIdType(idObj.type as any);
+                                        showToast(`Identity card type set to: ${idObj.label}`, "info");
+                                      }}
+                                      className={`p-1.5 rounded-lg border text-[8px] font-black uppercase text-center transition-all ${
+                                        isSelected 
+                                          ? "bg-slate-800 border-blue-400 text-blue-400" 
+                                          : "bg-slate-950 border-slate-900 text-slate-500 hover:text-slate-300"
+                                      }`}
+                                    >
+                                      {idObj.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Simulated Card Image */}
+                            {regPersonalIdImage ? (
+                              <div className="relative border border-blue-500/30 rounded-xl overflow-hidden bg-slate-950/85 p-3 flex flex-col items-center">
+                                {/* Simulated Identity layout */}
+                                <div className="border border-blue-500/20 max-w-[170px] w-full bg-gradient-to-tr from-slate-900 via-indigo-955 to-slate-900 text-white p-2 rounded-xl shadow-lg relative text-left select-none overflow-hidden font-sans">
+                                  {/* flag */}
+                                  <div className="flex justify-between items-start mb-1">
+                                    <div className="h-2.5 w-3.5 bg-emerald-500 rounded-sm"></div>
+                                    <span className="text-[4px] text-blue-400 uppercase font-black tracking-widest font-mono">FRN NATIONAL IDENTITY</span>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <div className="h-8 w-6 bg-slate-950 border border-white/10 rounded flex items-center justify-center text-[8px]">👑</div>
+                                    <div className="flex-1 space-y-0.5">
+                                      <p className="text-[4px] text-slate-500 leading-none lowercase">names</p>
+                                      <p className="text-[5.5px] font-black tracking-wider uppercase leading-none text-slate-200">{regOwnerName.split(' ')[1] || "EZE"}</p>
+                                      <p className="text-[5.5px] font-bold tracking-wider uppercase leading-none text-slate-200">{regOwnerName.split(' ')[0] || "CHINEDU"}</p>
+                                      
+                                      <p className="text-[4px] text-slate-500 leading-none lowercase mt-0.5">card no / type</p>
+                                      <p className="text-[4.5px] font-mono leading-none font-bold text-slate-300">{regPersonalIdType.substring(0,3).toUpperCase()}-{Math.floor(1000 + Math.random() * 8999)}</p>
+                                    </div>
+                                  </div>
+                                  <div className="absolute -bottom-1 -right-1 text-[16px] opacity-10">🇳🇬</div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRegPersonalIdImage("");
+                                    showToast("Removed ID card photo.", "info");
+                                  }}
+                                  className="absolute top-2 right-2 p-1 bg-slate-950/80 rounded-full hover:bg-red-950 text-slate-300 font-bold text-xs flex items-center justify-center w-5 h-5"
+                                >
+                                  ×
+                                </button>
+                                <span className="text-[8px] text-blue-400 font-bold block mt-2.5">✓ Snapped {regPersonalIdType === "voters_card" ? "Voters Card" : regPersonalIdType === "intl_passport" ? "Passport" : "Drivers License"} successfully</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-xl p-5 bg-slate-950/40 text-center space-y-3">
+                                <span className="text-2xl text-slate-600">🪪</span>
+                                <div className="space-y-0.5">
+                                  <p className="text-[10px] text-slate-400 font-bold">No snapped ID card yet</p>
+                                  <p className="text-[8px] text-slate-500">Provide a clear smartphone snapshot</p>
+                                </div>
+                                <div className="flex gap-2 w-full max-w-[200px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast(`📸 Camera active: Snapped your ${regPersonalIdType} photo!`, "success");
+                                      setRegPersonalIdImage("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='blue'/><text x='10' y='50' fill='white'>ID APPROVED</text></svg>");
+                                    }}
+                                    className="flex-1 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 text-slate-300 rounded-xl text-[9.5px] py-2 font-bold active:scale-95 transition-all"
+                                  >
+                                    📷 Snap ID
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast("✓ Personal ID file uploaded from storage!", "success");
+                                      setRegPersonalIdImage("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='blue'/><text x='10' y='50' fill='white'>ID APPROVED</text></svg>");
+                                    }}
+                                    className="flex-1 bg-blue-600 text-white rounded-xl text-[9.5px] py-2 font-bold active:scale-95 transition-all"
+                                  >
+                                    📁 Upload ID
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {regErrors.personalIdImage && (
+                              <p className="text-[9px] font-semibold text-red-400 pt-0.5">{regErrors.personalIdImage}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Control buttons */}
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setRegStep(2)}
+                          className="flex-1 bg-slate-900 border border-slate-800 text-slate-300 font-sans font-bold text-xs py-3 rounded-xl transition-all duration-155 active:scale-95 uppercase tracking-wide"
+                        >
+                          Prev Step
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextStep}
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-emerald-500 text-white font-sans font-black text-xs py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md tracking-wider uppercase"
+                        >
+                          Finish Setup
                         </button>
                       </div>
                     </div>
                   )}
-
-                  <form onSubmit={handleRegisterSubmit} className="space-y-3 pb-4">
-                    {/* Business Name */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        Business Name
-                      </label>
-                      <input
-                        type="text"
-                        value={regBusinessName}
-                        onChange={(e) => setRegBusinessName(e.target.value)}
-                        placeholder="e.g. Alaba Electronics Store"
-                        className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                          regErrors.businessName ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                        }`}
-                      />
-                      {regErrors.businessName && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.businessName}</p>
-                      )}
-                    </div>
-
-                    {/* Owner Name */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        Owner Name
-                      </label>
-                      <input
-                        type="text"
-                        value={regOwnerName}
-                        onChange={(e) => setRegOwnerName(e.target.value)}
-                        placeholder="e.g. Chinedu Eze"
-                        className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                          regErrors.ownerName ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                        }`}
-                      />
-                      {regErrors.ownerName && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.ownerName}</p>
-                      )}
-                    </div>
-
-                    {/* WhatsApp Number */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        WhatsApp Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={regPhoneNumber}
-                        onChange={(e) => setRegPhoneNumber(e.target.value)}
-                        placeholder="e.g. +234 803 123 4567"
-                        className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                          regErrors.phoneNumber ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                        }`}
-                      />
-                      {regErrors.phoneNumber && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.phoneNumber}</p>
-                      )}
-                    </div>
-
-                    {/* National Identity Number (NIN) */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block flex items-center justify-between">
-                        <span>🇳🇬 National Identity Number (NIN)</span>
-                        <span className="text-[8px] bg-slate-100 text-[#0052CC] font-bold px-1.5 py-0.5 rounded">11 Digits Security Lookup</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          maxLength={11}
-                          value={regNin}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, "");
-                            setRegNin(val);
-                          }}
-                          placeholder="e.g. 12345678901"
-                          className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 font-mono tracking-wider pr-10 ${
-                            regErrors.nin ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                          }`}
-                        />
-                        {ninLookupStatus === "searching" && (
-                          <span className="absolute right-3.5 top-3 flex items-center">
-                            <span className="animate-spin h-3.5 w-3.5 border-2 border-[#0052CC] border-t-transparent rounded-full"></span>
-                          </span>
-                        )}
-                        {ninLookupStatus === "verified" && (
-                          <span className="absolute right-3.5 top-2.5 text-[#4CBB17] font-black text-sm" title="Verified Name Match">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      {ninLookupStatus === "searching" && (
-                        <p className="text-[8.5px] font-bold text-[#0052CC] animate-pulse flex items-center gap-1 mt-0.5">
-                          <span>🔍 Verifying with National Identity Database (NIMC)...</span>
-                        </p>
-                      )}
-                      {ninLookupStatus === "verified" && (
-                        <div className="bg-[#4CBB17]/5 border border-[#4CBB17]/20 p-2 rounded-xl flex items-center justify-between mt-1">
-                          <div>
-                            <p className="text-[8.5px] font-bold text-[#4CBB17]">✓ NIMC Security Match</p>
-                            <p className="text-[8px] text-slate-400 font-sans mt-0.5">Linked: {ninVerifiedName}</p>
-                          </div>
-                          <span className="text-[7.5px] bg-[#4CBB17] text-white px-1.5 py-0.5 rounded-md font-black tracking-wider uppercase scale-90 shrink-0">VERIFIED</span>
-                        </div>
-                      )}
-                      {regErrors.nin && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.nin}</p>
-                      )}
-                    </div>
-
-                    {/* Email */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="e.g. info@shop.com"
-                        className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                          regErrors.email ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                        }`}
-                      />
-                      {regErrors.email && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.email}</p>
-                      )}
-                    </div>
-
-                    {/* Password */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        Password
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showRegPassword ? "text" : "password"}
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className={`w-full bg-white text-xs text-[#0A2540] border outline-none pl-3.5 pr-10 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                            regErrors.password ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowRegPassword(!showRegPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-navy transition-colors duration-150"
-                        >
-                          {showRegPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                      {regErrors.password && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.password}</p>
-                      )}
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-1 text-left">
-                      <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                        Confirm Password
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showRegConfirmPassword ? "text" : "password"}
-                          value={regConfirmPassword}
-                          onChange={(e) => setRegConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className={`w-full bg-white text-xs text-[#0A2540] border outline-none pl-3.5 pr-10 py-2.5 rounded-xl placeholder:text-slate-300 transition-all duration-150 ${
-                            regErrors.confirmPassword ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0A2540]"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-navy transition-colors duration-150"
-                        >
-                          {showRegConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                      {regErrors.confirmPassword && (
-                        <p className="text-[9px] font-semibold text-red-500 pt-0.5">{regErrors.confirmPassword}</p>
-                      )}
-                    </div>
-
-                    {/* Custom Type of Goods & Suggestions */}
-                    <div className="space-y-3.5 border-t border-slate-100 pt-4.5 text-left">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[#0A2540] uppercase tracking-wider block">
-                          Type of Goods in Shop
-                        </label>
-                        <p className="text-[9px] text-[#0052CC] font-bold">
-                          Pick standard presets below, or key in your own tailored suggestions.
-                        </p>
-                      </div>
-
-                      {/* Grid representation of retail Goods Types */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {GOODS_TYPES.map((gt) => (
-                          <button
-                            key={gt.id}
-                            type="button"
-                            onClick={() => {
-                              setRegGoodsType(gt.id);
-                              showToast(`Switched shop template to ${gt.name}!`, "info");
-                            }}
-                            className={`p-2.5 rounded-xl border text-[10px] font-semibold flex items-center gap-1.5 transition-all text-left shadow-2xs active:scale-95 ${
-                              regGoodsType === gt.id
-                                ? "bg-gradient-to-br from-[#0A2540] via-[#0052CC] to-[#4CBB17] text-white border-transparent"
-                                : "bg-white border-slate-200 hover:bg-slate-50 text-[#0A2540]/90"
-                            }`}
-                          >
-                            <span className="text-xs">{gt.icon}</span>
-                            <span className="truncate">{gt.name}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Interactive checkboxes of recommendations */}
-                      <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl space-y-2.5 shadow-inner">
-                        <p className="text-[9px] font-bold text-[#0A2540] uppercase tracking-widest flex items-center justify-between">
-                          <span>📦 Standard Recommendations to load</span>
-                          <span className="text-[8px] bg-[#0052CC]/10 text-[#0052CC] font-bold px-1.5 py-0.5 rounded-full">
-                            {selectedSuggestions.length} Checked
-                          </span>
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto pr-1">
-                          {GOODS_TYPES.find(gt => gt.id === regGoodsType)?.suggestions.map((sug) => {
-                            const isChecked = selectedSuggestions.includes(sug);
-                            return (
-                              <label
-                                key={sug}
-                                className={`flex items-center gap-2 p-1.5 px-2 rounded-xl border select-none cursor-pointer text-[9px] transition-all bg-white hover:bg-slate-100/50 ${
-                                  isChecked ? "border-[#0052CC]/40 text-[#0A2540] font-black" : "border-slate-100 text-slate-400"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    if (isChecked) {
-                                      setSelectedSuggestions(selectedSuggestions.filter(s => s !== sug));
-                                    } else {
-                                      setSelectedSuggestions([...selectedSuggestions, sug]);
-                                    }
-                                  }}
-                                  className="accent-[#0052CC] h-3 w-3"
-                                />
-                                <span className="truncate leading-none">{sug}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-
-                        {/* Other custom additions for brand discrepancy handling */}
-                        <div className="space-y-1.5 border-t border-slate-200/60 pt-2.5">
-                          <p className="text-[9px] font-bold text-[#0A2540] flex items-center gap-1">
-                            <span>✨ Brand mismatch? Add custom alternatives:</span>
-                          </p>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={otherSuggestionInput}
-                              onChange={(e) => setOtherSuggestionInput(e.target.value)}
-                              placeholder="e.g. Three Crowns tin, Peak sachet"
-                              className="flex-1 bg-white border border-slate-200 outline-none text-[10px] px-3 py-2 rounded-xl text-[#0A2540] placeholder:text-slate-350 focus:border-[#0A2540] font-sans"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  if (otherSuggestionInput.trim()) {
-                                    setOtherSuggestions([...otherSuggestions, otherSuggestionInput.trim()]);
-                                    setOtherSuggestionInput("");
-                                    showToast(`Added Custom Brand: ${otherSuggestionInput.trim()}`, "success");
-                                  }
-                                }
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (otherSuggestionInput.trim()) {
-                                  setOtherSuggestions([...otherSuggestions, otherSuggestionInput.trim()]);
-                                  setOtherSuggestionInput("");
-                                  showToast(`Added Custom Brand: ${otherSuggestionInput.trim()}`, "success");
-                                }
-                              }}
-                              className="px-3 bg-gradient-to-r from-[#0A2540] to-[#0052CC] text-white rounded-xl text-[9px] font-black tracking-wider transition-all active:scale-95 shadow-sm"
-                            >
-                              ADD
-                            </button>
-                          </div>
-
-                          {/* Render custom input tags list with close button */}
-                          {otherSuggestions.length > 0 && (
-                            <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto pt-1">
-                              {otherSuggestions.map((item) => (
-                                <span
-                                  key={item}
-                                  className="bg-white border border-[#4CBB17]/30 text-[#0052CC] text-[8px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
-                                >
-                                  <span>{item}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setOtherSuggestions(otherSuggestions.filter(x => x !== item))}
-                                    className="text-red-500 hover:text-red-700 font-extrabold text-[9px]"
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action */}
-                    <button
-                      type="submit"
-                      className={`w-full bg-gradient-to-r from-[#0A2540] via-[#0052CC] to-[#4CBB17] hover:brightness-110 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/10 active:scale-[0.98] text-white font-sans font-bold text-sm py-3 rounded-xl transition-all duration-155 mt-4 shadow-sm ${
-                        tourStep === 7 ? "ring-4 ring-[#4CBB17] ring-offset-2 animate-pulse scale-[1.01]" : ""
-                      }`}
-                    >
-                      {tourStep === 7 ? "🚀 Complete Registration Walkthrough!" : "Verify WhatsApp Number"}
-                    </button>
-                  </form>
                 </div>
-
-                {/* Floating Walkthrough Tooltip Overlay */}
-                {tourStep >= 0 && (
-                  <div className="absolute bottom-3 left-3 right-3 bg-[#0A2540] text-white p-3.5 rounded-2xl shadow-2xl border border-white/10 z-[100] space-y-2.5 transform transition-all select-none animate-bounce-subtle text-left">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-0.5">
-                        <p className="text-[7.5px] font-black text-blue-400 uppercase tracking-widest leading-none">
-                          Interactive Walkthrough
-                        </p>
-                        <h4 className="text-[10.5px] font-extrabold leading-tight text-white flex items-center gap-1">
-                          {REG_TOUR_STEPS[tourStep].title}
-                        </h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTourStep(-1);
-                          showToast("Walkthrough closed. Feel free to fill in manually!", "info");
-                        }}
-                        className="text-slate-400 hover:text-white p-0.5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    <p className="text-[9.5px] text-slate-300 leading-normal font-medium text-left">
-                      {REG_TOUR_STEPS[tourStep].desc}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-1.5 border-t border-white/10 gap-1.5">
-                      <div className="flex gap-1">
-                        {/* Auto-fill step button */}
-                        {REG_TOUR_STEPS[tourStep].field && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const step = REG_TOUR_STEPS[tourStep];
-                              if (step.field === "regBusinessName") setRegBusinessName(step.autoFillVal);
-                              if (step.field === "regOwnerName") setRegOwnerName(step.autoFillVal);
-                              if (step.field === "regPhoneNumber") setRegPhoneNumber(step.autoFillVal);
-                              if (step.field === "regNin") {
-                                setRegNin(step.autoFillVal);
-                                setNinLookupStatus("verified");
-                                setNinVerifiedName("CHINEDU EZE");
-                              }
-                              if (step.field === "regEmail") setRegEmail(step.autoFillVal);
-                              if (step.field === "regPassword") {
-                                setRegPassword(step.autoFillVal);
-                                setRegConfirmPassword(step.autoFillVal);
-                              }
-                              if (step.field === "regGoodsType") setRegGoodsType(step.autoFillVal);
-                              
-                              showToast(`✓ Filled: ${step.autoFillVal}`, "success");
-                            }}
-                            className="bg-blue-500/25 hover:bg-blue-500/40 text-blue-300 text-[8px] font-extrabold px-2 py-1 rounded-lg transition-colors border border-blue-400/20 shadow-xs"
-                          >
-                            ✨ Auto-fill
-                          </button>
-                        )}
-                        {tourStep < 7 && (
-                          <button
-                            type="button"
-                            onClick={handleAutoFillAllTour}
-                            className="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-400 text-[8px] font-extrabold px-1.5 py-1 rounded-lg transition-colors border border-emerald-400/20 shadow-xs"
-                          >
-                            ⚡ Auto-Fill All
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex gap-1 shrink-0">
-                        {tourStep > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setTourStep(prev => prev - 1)}
-                            className="bg-white/10 hover:bg-white/20 text-white text-[8px] font-extrabold px-2 py-1 rounded-lg active:scale-95 transition-all border border-white/5"
-                          >
-                            Prev
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handleNextTourStep}
-                          className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[8.5px] font-black px-2.5 py-1 rounded-lg active:scale-95 transition-all shadow-xs flex items-center gap-1 uppercase tracking-wider"
-                        >
-                          <span>{tourStep === REG_TOUR_STEPS.length - 1 ? "Finish" : "Next"}</span>
-                          <ChevronRight className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </motion.div>
             )}
 
@@ -2135,8 +2567,8 @@ export default function PhoneSimulator({
                       <div className="space-y-1.5">
                         {[
                           { id: "monthly", name: "Monthly Ledger", price: "₦5,000", tag: "Standard Setup" },
-                          { id: "quarterly", name: "Quarterly Saver", price: "₦12,550", tag: "Save 15% (₦4,183/mo)" },
-                          { id: "yearly", name: "Yearly Unlimited", price: "₦42,000", tag: "Save 30% (₦3,500/mo) - Best Choice" }
+                          { id: "quarterly", name: "Quarterly Saver", price: "₦24,000", tag: "3 Months Subscription" },
+                          { id: "yearly", name: "Yearly Unlimited", price: "₦50,000", tag: "Best Choice" }
                         ].map((plan) => {
                           const isSel = selectedPlan === plan.id;
                           return (
@@ -2184,7 +2616,7 @@ export default function PhoneSimulator({
 
                       <p className="text-[9px] text-[#0052CC] font-bold bg-[#0052CC]/5 p-2 rounded-lg">
                         💳 You are pre-authorizing your card. <strong>₦0.00</strong> will be charged today for verification. Standard auto-renew of {
-                          selectedPlan === "monthly" ? "₦5,000 monthly" : selectedPlan === "quarterly" ? "₦12,550 quarterly" : "₦42,000 yearly"
+                          selectedPlan === "monthly" ? "₦5,000 monthly" : selectedPlan === "quarterly" ? "₦24,000 quarterly" : "₦50,000 yearly"
                         } streams automatically after the trial on June 26, 2026. Cancel anytime.
                       </p>
 
@@ -2208,43 +2640,26 @@ export default function PhoneSimulator({
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Expiry date */}
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">
-                            Expiry (MM/YY)
-                          </label>
-                          <input
-                            type="text"
-                            maxLength={5}
-                            placeholder="12/28"
-                            value={subExpiry}
-                            onChange={(e) => {
-                              const cleanStr = e.target.value.replace(/\D/g, "");
-                              if (cleanStr.length > 2) {
-                                setSubExpiry(cleanStr.slice(0, 2) + "/" + cleanStr.slice(2, 4));
-                              } else {
-                                setSubExpiry(cleanStr);
-                              }
-                            }}
-                            className="w-full bg-white text-xs border border-slate-200 outline-none px-3 py-2 rounded-xl text-[#0A2540] font-mono tracking-wider text-center placeholder:text-slate-250 focus:border-[#0A2540]"
-                          />
-                        </div>
-
-                        {/* CVV */}
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">
-                            CVV Code
-                          </label>
-                          <input
-                            type="password"
-                            maxLength={3}
-                            placeholder="***"
-                            value={subCvv}
-                            onChange={(e) => setSubCvv(e.target.value.replace(/\D/g, ""))}
-                            className="w-full bg-white text-xs border border-slate-200 outline-none px-3 py-2 rounded-xl text-[#0A2540] font-mono tracking-wider text-center placeholder:text-slate-250 focus:border-[#0A2540]"
-                          />
-                        </div>
+                      {/* Expiry date */}
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Expiry (MM/YY)
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={5}
+                          placeholder="12/28"
+                          value={subExpiry}
+                          onChange={(e) => {
+                            const cleanStr = e.target.value.replace(/\D/g, "");
+                            if (cleanStr.length > 2) {
+                              setSubExpiry(cleanStr.slice(0, 2) + "/" + cleanStr.slice(2, 4));
+                            } else {
+                              setSubExpiry(cleanStr);
+                            }
+                          }}
+                          className="w-full bg-white text-xs border border-slate-200 outline-none px-3 py-2 rounded-xl text-[#0A2540] font-mono tracking-wider text-center placeholder:text-slate-250 focus:border-[#0A2540]"
+                        />
                       </div>
                     </div>
 
@@ -2345,17 +2760,17 @@ export default function PhoneSimulator({
                         </button>
                       </div>
 
-                      {/* Login ID Row (Email for Admin, Username for Staff) */}
+                      {/* Login ID Row (Username or Email for Admin, Username for Staff) */}
                       <div className="space-y-0.5">
                         <label className="text-[9px] font-bold text-[#0A2540] uppercase tracking-wider block font-sans">
-                          {loginRole === "admin" ? "Admin Email Address" : "Staff Username (Not Email)"}
+                          {loginRole === "admin" ? "Admin Username or Email" : "Staff Username"}
                         </label>
                         <input
-                          type={loginRole === "admin" ? "email" : "text"}
+                          type="text"
                           value={logEmail}
                           onChange={(e) => setLogEmail(e.target.value)}
-                          placeholder={loginRole === "admin" ? "e.g. info@shop.com" : "e.g. staff_chinelo"}
-                          className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl transition-all duration-150 placeholder:text-slate-200 ${
+                          placeholder={loginRole === "admin" ? "e.g. username or info@shop.com" : "e.g. staff_chinelo"}
+                          className={`w-full bg-white text-xs text-[#0A2540] border outline-none px-3.5 py-2.5 rounded-xl transition-all duration-155 placeholder:text-slate-200 ${
                             logErrors.email ? "border-red-500" : "border-slate-200 focus:border-[#0A2540]"
                           }`}
                         />
@@ -2876,36 +3291,56 @@ export default function PhoneSimulator({
                             <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block">POS Network Mode</span>
                             <button
                               onClick={() => {
+                                if (isSyncingOffline) return;
                                 const nextMode = !isOfflineMode;
                                 setIsOfflineMode(nextMode);
                                 if (!nextMode && offlineSalesQueue.length > 0) {
-                                  // Auto sync queue!
+                                  // Auto sync queue with beautiful visual animation!
                                   const queuedSum = offlineSalesQueue.reduce((a, b) => a + b.amount, 0);
-                                  showToast(`🔄 Online restablished! Auto-syncing ${offlineSalesQueue.length} sales (Total: ₦${queuedSum.toLocaleString()}) to database...`, "success");
+                                  const queuedCount = offlineSalesQueue.length;
                                   
-                                  // Update revenue in master
-                                  if (activeShopId && setShopOwners) {
-                                    setShopOwners((prev) =>
-                                      prev.map((o) => {
-                                        if (o.id === activeShopId) {
-                                          const syncActivity = {
-                                            id: `act_sync_${Date.now()}`,
-                                            timestamp: new Date().toLocaleTimeString(),
-                                            type: "Admin",
-                                            description: `Successfully synchronized ${offlineSalesQueue.length} offline checkout items (₦${queuedSum.toLocaleString()} injected).`
-                                          };
-                                          return {
-                                            ...o,
-                                            cumulativeRevenue: o.cumulativeRevenue + queuedSum,
-                                            offlineSalesQueue: [],
-                                            activities: [syncActivity, ...o.activities]
-                                          };
+                                  setIsSyncingOffline(true);
+                                  setSyncProgress(0);
+                                  
+                                  const interval = setInterval(() => {
+                                    setSyncProgress((prev) => {
+                                      if (prev >= 100) {
+                                        clearInterval(interval);
+                                        
+                                        // Update revenue in master
+                                        if (activeShopId && setShopOwners) {
+                                          setShopOwners((prevOwners) =>
+                                            prevOwners.map((o) => {
+                                              if (o.id === activeShopId) {
+                                                const syncActivity = {
+                                                  id: `act_sync_${Date.now()}`,
+                                                  timestamp: new Date().toLocaleTimeString(),
+                                                  type: "Admin",
+                                                  description: `Successfully synchronized ${queuedCount} offline checkout items (₦${queuedSum.toLocaleString()} injected).`
+                                                };
+                                                return {
+                                                  ...o,
+                                                  cumulativeRevenue: o.cumulativeRevenue + queuedSum,
+                                                  offlineSalesQueue: [],
+                                                  activities: [syncActivity, ...o.activities]
+                                                };
+                                              }
+                                              return o;
+                                            })
+                                          );
                                         }
-                                        return o;
-                                      })
-                                    );
-                                  }
-                                  setOfflineSalesQueue([]);
+                                        
+                                        setTimeout(() => {
+                                          setIsSyncingOffline(false);
+                                          setOfflineSalesQueue([]);
+                                          showToast(`✓ Auto-Sync Completed: ${queuedCount} sales successfully synchronized to central ledger.`, "success");
+                                        }, 800);
+                                        
+                                        return 100;
+                                      }
+                                      return prev + 25;
+                                    });
+                                  }, 450);
                                 } else {
                                   showToast(nextMode ? "🔌 Switched terminal to Offline Mode" : "📶 Terminals are online", "info");
                                 }
@@ -2952,7 +3387,7 @@ export default function PhoneSimulator({
                                 )}
                               </p>
                               <p className="text-[8.5px] text-slate-400 font-sans leading-none mt-0.5">
-                                Automatic subscription of {selectedPlan === "yearly" ? "₦42,000 yearly" : selectedPlan === "quarterly" ? "₦12,550 quarterly" : "₦5,000 monthly"} initiates June 26, 2026.
+                                Automatic subscription of {selectedPlan === "yearly" ? "₦50,000 yearly" : selectedPlan === "quarterly" ? "₦24,000 quarterly" : "₦5,000 monthly"} initiates June 26, 2026.
                               </p>
                             </div>
                             <button
@@ -3212,6 +3647,39 @@ export default function PhoneSimulator({
                       </div>
                     ) : (
                       <div className="flex-1 flex flex-col justify-between">
+                      {/* OFFLINE / SYNC STATUS INDICATOR IN TERMINAL */}
+                      {isOfflineMode && (
+                        <div className="mx-4 mt-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-center justify-between text-left animate-pulse shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🔌</span>
+                            <div>
+                              <p className="text-[10px] font-black text-amber-800">Terminal Disconnected (Offline)</p>
+                              <p className="text-[8px] text-slate-500 font-sans leading-none">Sales record locally & auto-upload upon reconnection.</p>
+                            </div>
+                          </div>
+                          {offlineSalesQueue.length > 0 && (
+                            <span className="text-[9px] bg-amber-500 text-white font-mono font-bold px-1.5 py-0.5 rounded-full">
+                              {offlineSalesQueue.length} Queued
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {isSyncingOffline && (
+                        <div className="mx-4 mt-3 bg-gradient-to-r from-[#0052CC]/10 to-[#4CBB17]/10 border border-[#0052CC]/20 rounded-xl p-2.5 flex items-center justify-between text-left animate-pulse shrink-0">
+                          <div className="flex items-center gap-2">
+                            <RefreshCw className="h-4.5 w-4.5 text-[#0052CC] animate-spin" />
+                            <div>
+                              <p className="text-[10px] font-black text-[#0052CC]">Auto-Syncing Ledger...</p>
+                              <p className="text-[8px] text-slate-500 font-sans leading-none">Pushing secure transactions to master cloud.</p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] bg-[#0052CC] text-white font-mono font-bold px-1.5 py-0.5 rounded-lg">
+                            {syncProgress}%
+                          </span>
+                        </div>
+                      )}
+
                       {/* CATEGORIES GRID FOR QUICK BROWSE */}
                       <div className="px-4 pt-3.5 pb-2 border-b border-slate-100 bg-[#FAFBFD]/70 shrink-0">
                         <div className="flex items-center justify-between mb-1.5">
@@ -4256,6 +4724,42 @@ export default function PhoneSimulator({
                             placeholder="e.g. 2000000"
                             className="w-full bg-white text-xs text-[#0A2540] border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-[#0052CC]"
                           />
+                        </div>
+                      </div>
+
+                      {/* Section 3.5: Display & Theme Preferences */}
+                      <div className="bg-white border border-slate-150 p-3.5 rounded-2xl space-y-3 shadow-xs">
+                        <div className="flex items-center gap-1.5 text-[#0A2540]">
+                          <Sparkles className="h-4 w-4 text-[#0052CC]" />
+                          <h4 className="text-[10px] font-extrabold uppercase tracking-widest">
+                            Theme Preferences
+                          </h4>
+                        </div>
+                        <p className="text-[9px] text-slate-400 leading-normal">
+                          Customize your mobile dashboard view mode. The default theme is light with classic CSB brand colors.
+                        </p>
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="space-y-0.5 text-left">
+                            <span className="text-[9px] font-bold text-slate-700 block">Dark Mode</span>
+                            <span className="text-[8px] text-slate-400 block">Reduce eye strain in low light</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = !isDarkMode;
+                              setIsDarkMode(nextVal);
+                              showToast(nextVal ? "🌙 Dark Mode activated!" : "☀️ Light Mode activated!", "success");
+                            }}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              isDarkMode ? "bg-[#0052CC]" : "bg-slate-200"
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                isDarkMode ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
                         </div>
                       </div>
 
@@ -5755,8 +6259,8 @@ export default function PhoneSimulator({
                   <div className="space-y-1.5">
                     {[
                       { id: "monthly", label: "Monthly Auto-Pay", price: "₦5,000/mo", desc: "Pay month to month" },
-                      { id: "quarterly", label: "Quarterly Auto-Pay", price: "₦12,550/qtr", desc: "Save 16% on renewal" },
-                      { id: "yearly", label: "Yearly Auto-Pay", price: "₦42,000/yr", desc: "Save 30% on renewal (Best Value)" }
+                      { id: "quarterly", label: "Quarterly Auto-Pay", price: "₦24,000/qtr", desc: "Renew every 3 months" },
+                      { id: "yearly", label: "Yearly Auto-Pay", price: "₦50,000/yr", desc: "Best value overall" }
                     ].map((plan) => (
                       <div
                         key={plan.id}
@@ -6687,21 +7191,58 @@ export default function PhoneSimulator({
       <AnimatePresence>
         {toastMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className={`absolute bottom-16 left-4 right-4 p-3 rounded-xl shadow-lg border text-[10px] font-sans font-bold flex items-center gap-2 z-50 ${
+            initial={{ opacity: 0, y: -25, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -25, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className={`absolute top-14 left-4 right-4 p-3 rounded-2xl shadow-xl border text-[10px] font-sans font-bold flex items-center justify-between gap-2.5 z-50 ${
               toastType === "success"
-                ? "bg-[#0052CC]/5 text-[#0052CC] border-[#0052CC]/15"
+                ? "bg-white border-emerald-100 text-emerald-950 shadow-emerald-100/40"
                 : toastType === "error"
-                ? "bg-slate-950 text-white border-slate-900"
-                : "bg-slate-50 text-slate-700 border-slate-200"
+                ? "bg-slate-900 border-rose-900/50 text-white shadow-slate-950/40"
+                : "bg-slate-900 border-slate-800 text-white shadow-slate-950/40"
             }`}
           >
-            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-              toastType === "success" ? "bg-[#0052CC]" : toastType === "error" ? "bg-white" : "bg-slate-500"
-            }`}></div>
-            <span className="text-left line-clamp-2">{toastMessage}</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className={`p-1.5 rounded-lg shrink-0 ${
+                toastType === "success" 
+                  ? "bg-emerald-500/10 text-emerald-600" 
+                  : toastType === "error" 
+                  ? "bg-rose-500/20 text-rose-300" 
+                  : "bg-blue-500/20 text-blue-300"
+              }`}>
+                {toastType === "success" ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : toastType === "error" ? (
+                  <AlertCircle className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </div>
+              
+              <div className="text-left min-w-0 flex-1">
+                <p className={`text-[8.5px] font-black uppercase tracking-wider leading-none mb-0.5 ${
+                  toastType === "success" ? "text-emerald-700" : "text-slate-300"
+                }`}>
+                  {toastType === "success" ? "Success Notification" : toastType === "error" ? "Action Prevented" : "System Notification"}
+                </p>
+                <p className={`text-[9.5px] font-semibold leading-tight ${
+                  toastType === "success" ? "text-slate-800" : "text-slate-200"
+                } line-clamp-2`}>
+                  {toastMessage}
+                </p>
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => setToastMessage(null)}
+              className={`p-1 rounded-md hover:bg-black/5 transition-colors shrink-0 ${
+                toastType === "success" ? "text-emerald-600 hover:text-emerald-800" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -7170,6 +7711,96 @@ export default function PhoneSimulator({
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FULLSCREEN AUTO-SYNC ENGINE ANIMATION OVERLAY */}
+      <AnimatePresence>
+        {isSyncingOffline && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[#0A2540]/95 z-[150] flex flex-col justify-between p-6 text-white select-none rounded-[32px]"
+          >
+            {/* Upper notch buffer */}
+            <div className="h-6"></div>
+
+            {/* Core Animation Area */}
+            <div className="flex-1 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="relative">
+                {/* Pulsing ring animation */}
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.3, 0.1, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -inset-4 rounded-full bg-[#0052CC]/40 blur-md"
+                />
+                
+                {/* Rotating sync center */}
+                <div className="h-14 w-14 bg-gradient-to-tr from-[#0052CC] to-[#4CBB17] rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 relative z-10">
+                  <RefreshCw className="h-7 w-7 text-white animate-spin" />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-w-[240px]">
+                <h4 className="font-display font-black text-xs tracking-tight text-white flex items-center justify-center gap-1.5">
+                  <span>Auto-Sync in Progress</span>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </h4>
+                <p className="text-[9.5px] text-slate-300 leading-relaxed">
+                  Restoring secure network link... Synchronizing offline checkout log with central ledger.
+                </p>
+              </div>
+
+              {/* Progress gauge */}
+              <div className="w-full max-w-[210px] space-y-2">
+                <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
+                  <span>Central Ledger Link</span>
+                  <span className="font-bold text-white text-[10px]">{syncProgress}%</span>
+                </div>
+                
+                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/50 p-0.5">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#0052CC] to-[#4CBB17] rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${syncProgress}%` }}
+                    transition={{ ease: "easeInOut" }}
+                  />
+                </div>
+              </div>
+
+              {/* Individual sync transactions step cards */}
+              <div className="w-full max-w-[220px] bg-slate-950/40 rounded-xl p-2.5 border border-white/5 space-y-1 text-left">
+                <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider block mb-1">Simulated Sync Steps</span>
+                <div className="space-y-1 max-h-[85px] overflow-y-auto pr-1">
+                  {offlineSalesQueue.map((item, idx) => {
+                    const isSynced = syncProgress > (idx * 100) / offlineSalesQueue.length;
+                    return (
+                      <div key={item.id || idx} className="flex items-center justify-between text-[9.5px] py-1 border-b border-white/5 last:border-none">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px]">{isSynced ? "✅" : "⏳"}</span>
+                          <span className="text-slate-300 font-medium truncate">Offline Transaction #{idx + 1}</span>
+                        </div>
+                        <span className={`font-mono text-[9px] font-bold ${isSynced ? "text-emerald-400" : "text-slate-400"}`}>
+                          ₦{item.amount?.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom info banner */}
+            <div className="text-center pt-2 border-t border-white/5">
+              <p className="text-[8.5px] text-slate-400 font-sans">
+                🛡️ Central ledger committed under security rules.
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
